@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, rm, cp } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -86,11 +86,4 @@ export const codex: ModelAdapter = {
   },
 };
 
-/** Canned outputs from mock/ for UI work and as a demo fallback. MODEL=mock in .env.local. */
-export const mock: ModelAdapter = {
-  async plan() { return planSchema.parse(JSON.parse(await readFile('mock/plan.json', 'utf8'))); },
-  async ask() { return { answer: 'Canned answer: measure between the outer edges with the caliper jaws closed on the board.', revised: null }; },
-  async generate(runDir) { await cp('mock/run', runDir, { recursive: true }); },
-};
-
-export const model: ModelAdapter = process.env.MODEL === 'mock' ? mock : codex;
+export const model: ModelAdapter = codex;

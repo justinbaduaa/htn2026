@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { projectSchema } from '../shared/types';
 
 // A real plan the model produced for the HTN badge: 50 readings across four photos, several groups spanning photos.
-const project = projectSchema.parse(JSON.parse(readFileSync('mock/badge-project.json', 'utf8')));
+const project = projectSchema.parse(JSON.parse(readFileSync('src/app/fixtures/badge-project.json', 'utf8')));
 vi.mock('../shared/api', () => ({ api: { get: async () => project, fileUrl: () => 'x.jpg' } }));
 vi.mock('./Viewer', () => ({ Viewer: () => null }));   // no WebGL in jsdom
 

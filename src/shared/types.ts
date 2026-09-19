@@ -50,6 +50,30 @@ export function normalizePlan(plan: Plan): Plan {
     d.critical = d.priority === 'required';
   }
   plan.dimensions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  datumLines(plan);
+  return plan;
+}
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/**
+ * The model sometimes hands a hole's center X and center Y the same circle as its diameter. A position
+ * is a caliper reading from the object's edge, so redraw it as a line from that edge to the hole center,
+ * taking the edge from the outline callout on the same photo. Left alone when there is nothing to derive from.
+ */
+export function datumLines(plan: Plan): Plan {
+  const edges = (photo: number) => {
+    const line = (kind: 'extent_x' | 'extent_y') => plan.dimensions.find(d => d.kind === kind && d.photo === photo && d.shape === 'line');
+    const x = line('extent_x'), y = line('extent_y');
+    return { left: x ? Math.min(x.box.x, x.box.x + x.box.w) : null, bottom: y ? Math.max(y.box.y, y.box.y + y.box.h) : null };
+  };
+  for (const d of plan.dimensions) {
+    if ((d.kind !== 'hole_x' && d.kind !== 'hole_y') || d.shape !== 'circle') continue;
+    const cx = d.box.x + d.box.w / 2, cy = d.box.y + d.box.h / 2;
+    const { left, bottom } = edges(d.photo);
+    if (d.kind === 'hole_x' && left != null && cx > left) { d.shape = 'line'; d.box = { x: clamp01(left), y: clamp01(cy), w: clamp01(cx - left), h: 0 }; }
+    if (d.kind === 'hole_y' && bottom != null && bottom > cy) { d.shape = 'line'; d.box = { x: clamp01(cx), y: clamp01(cy), w: 0, h: clamp01(bottom - cy) }; }
+  }
   return plan;
 }
 
