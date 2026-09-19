@@ -1,11 +1,18 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../shared/api';
 import type { Project, Run } from '../shared/types';
 import { Viewer } from './Viewer';
+import { DrawingViews } from './DrawingViews';
 import { useElapsed } from './useElapsed';
 
 export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; run: Run; onAcceptNeeds: () => void }) {
   const url = (f: string) => api.fileUrl(project.id, 'runs', String(run.n), f);
   const elapsed = useElapsed(run.status === 'running', run.started);
+  const [views, setViews] = useState(false);
+  // The readings this run was built from, for the dimension overlay and the drawing sheet.
+  const { data: dims } = useQuery({ queryKey: ['dims', project.id, run.n], queryFn: () => api.dims(project.id, run.n), enabled: run.status === 'done', staleTime: Infinity });
+  const parts = run.files.map(f => ({ name: f.part, url: url(f.stl) }));
   return (
     <section className="flex flex-col gap-3 border-t border-neutral-800 pt-3">
       <div className="flex items-baseline gap-3"><span>Run {run.n + 1}</span><span className="text-neutral-400">{run.status === 'running' ? `running, ${elapsed} s. Usually 30 to 90 s, up to 8 min.` : run.status}</span></div>
@@ -24,7 +31,7 @@ export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; ru
       )}
       {run.status === 'done' && (
         <>
-          <Viewer urls={run.files.map(f => url(f.stl))} />
+          <Viewer parts={parts} dims={dims ?? null} />
           <table className="w-full">
             <thead><tr className="text-left text-neutral-400"><th>Part</th><th>Print</th><th>Files</th></tr></thead>
             <tbody>
@@ -45,6 +52,10 @@ export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; ru
             </tbody>
           </table>
           <p className="text-neutral-400">Print order: as listed. Each part is oriented with its flat face on the bed. Copy the G-code to the SD card.</p>
+          <button type="button" onClick={() => setViews(v => !v)} disabled={!dims} className="w-fit px-3 py-1 text-neutral-300 hover:text-white disabled:opacity-40">
+            {views ? 'Hide engineering views' : 'Engineering views: top, front, right, isometric with dimensions'}
+          </button>
+          {views && dims && <DrawingViews parts={parts} dims={dims} meta={{ title: project.title, projectId: project.id, run: run.n }} />}
         </>
       )}
     </section>

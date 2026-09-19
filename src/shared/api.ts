@@ -1,4 +1,4 @@
-import { projectSchema, runSchema, type Project, type Run } from './types';
+import { dimsFileSchema, projectSchema, runSchema, type DimsFile, type Project, type Run } from './types';
 
 async function json<T>(input: string, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
@@ -22,4 +22,6 @@ export const api = {
   acceptNeeds: (id: string, n: number) => json<Project>(`/api/projects/${id}/accept-needs/${n}`, { method: 'POST' }),
   generate: (id: string) => json<Run>(`/api/projects/${id}/generate`, { method: 'POST' }).then(r => runSchema.parse(r)),
   fileUrl: (id: string, ...parts: string[]) => `/api/files/${id}/${parts.join('/')}`,
+  /** The dims.json a run was generated from: what the model saw, not the form's current values. */
+  dims: (id: string, n: number) => json<DimsFile>(`/api/files/${id}/runs/${n}/dims.json`).then(d => dimsFileSchema.parse(d)),
 };
