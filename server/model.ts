@@ -82,7 +82,7 @@ export const codex: ModelAdapter = {
     const images = photoPaths.flatMap(p => ['--image', p]);
     await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="high"', '--cd', runDir,
       '--output-last-message', join(runDir, 'last.md'), prompt, ...images],
-      { cwd: runDir, eventsPath: join(runDir, 'events.jsonl'), timeoutMs: 480_000, signal, env: { ...process.env, PATH: `${VENV_BIN}:${process.env.PATH}` } });
+      { cwd: runDir, eventsPath: join(runDir, 'events.jsonl'), timeoutMs: 480_000, signal, env: { ...process.env, PATH: `${VENV_BIN}:${process.env.PATH}`, CHECK_PYTHON: join(VENV_BIN, 'python') } });
   },
 };
 

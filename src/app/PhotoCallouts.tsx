@@ -4,17 +4,17 @@ import type { RequestedDimension } from '../shared/types';
 type Props = {
   src: string;
   dimensions: RequestedDimension[];   // the ones on this photo
-  active: string | null;              // focused field: drawn fully with its label
-  hovered: string | null;             // hovered field or callout: drawn fully with its label
+  lit: string[];                      // ids drawn fully: one focused field, or every reading of a focused group
+  label: string | null;               // caption for the lit set (a reading's name or a group label)
   onHover: (id: string | null) => void;
   onPick: (id: string) => void;
 };
 
 /**
- * Photo with every callout drawn faintly, and the focused or hovered one drawn fully with its label.
+ * Photo with every callout drawn faintly, and the lit set drawn fully with one caption.
  * Pixel-space SVG so line ticks and circles keep their shape.
  */
-export function PhotoCallouts({ src, dimensions, active, hovered, onHover, onPick }: Props) {
+export function PhotoCallouts({ src, dimensions, lit, label, onHover, onPick }: Props) {
   const ref = useRef<HTMLImageElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
@@ -26,9 +26,10 @@ export function PhotoCallouts({ src, dimensions, active, hovered, onHover, onPic
     return () => { ro.disconnect(); img.removeEventListener('load', update); };
   }, [src]);
 
-  const lit = hovered ?? active;
+  const litSet = new Set(lit);
   const drawable = dimensions.filter(d => d.shape !== 'none');
-  const litDim = dimensions.find(d => d.id === lit) ?? null;
+  const litHere = drawable.filter(d => litSet.has(d.id));
+  const hiddenHere = dimensions.filter(d => litSet.has(d.id) && d.shape === 'none');
   const px = (d: RequestedDimension) => ({ x: d.box.x * size.w, y: d.box.y * size.h, w: d.box.w * size.w, h: d.box.h * size.h });
 
   const shape = (d: RequestedDimension, full: boolean) => {
@@ -50,26 +51,30 @@ export function PhotoCallouts({ src, dimensions, active, hovered, onHover, onPic
     return <rect key={d.id} x={b.x} y={b.y} width={b.w} height={b.h} {...common} fill={full ? 'rgba(255,255,255,0.12)' : 'none'} style={{ pointerEvents: 'all' }} />;
   };
 
-  const label = litDim && litDim.shape !== 'none' ? (() => {
-    const b = px(litDim);
-    return { x: Math.max(4, Math.min(b.x, size.w - 260)), y: Math.max(4, b.y - 22) };
+  // Caption sits above the topmost lit callout.
+  const caption = litHere.length > 0 ? (() => {
+    const top = litHere.map(px).reduce((a, b) => (b.y < a.y ? b : a));
+    return { x: Math.max(4, Math.min(top.x, size.w - 260)), y: Math.max(4, top.y - 22), text: label ?? litHere[0]!.name };
   })() : null;
+  const hiddenNote = litHere.length === 0 && (hiddenHere.length > 0 || (lit.length > 0 && label))
+    ? `${label ?? hiddenHere[0]?.name}: not visible in this photo.${hiddenHere.length === 1 ? ` ${hiddenHere[0]!.why}` : ''}`
+    : null;
 
   return (
     <div className="relative">
       <img ref={ref} src={src} className="block w-full" alt="" />
       {size.w > 0 && (
         <svg width={size.w} height={size.h} className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-          {drawable.filter(d => d.id !== lit).map(d => shape(d, false))}
-          {litDim && litDim.shape !== 'none' && shape(litDim, true)}
-          {label && litDim && (
-            <foreignObject x={label.x} y={label.y} width={260} height={20} style={{ pointerEvents: 'none' }}>
-              <span className="inline-block max-w-[260px] truncate bg-black/80 px-1 text-xs text-white">{litDim.name}</span>
+          {drawable.filter(d => !litSet.has(d.id)).map(d => shape(d, false))}
+          {litHere.map(d => shape(d, true))}
+          {caption && (
+            <foreignObject x={caption.x} y={caption.y} width={260} height={20} style={{ pointerEvents: 'none' }}>
+              <span className="inline-block max-w-[260px] truncate bg-black/80 px-1 text-xs text-white">{caption.text}</span>
             </foreignObject>
           )}
         </svg>
       )}
-      {litDim?.shape === 'none' && <p className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-xs">{litDim.name}: not visible in this photo. {litDim.why}</p>}
+      {hiddenNote && <p className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-xs">{hiddenNote}</p>}
     </div>
   );
 }

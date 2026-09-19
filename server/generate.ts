@@ -9,15 +9,23 @@ import * as store from './store';
 let active: string | null = null;
 export const isBusy = () => active !== null;
 
-/** Turns the project's plan and entered values into the dims.json the model and checker read. Throws if a critical value is missing. */
-function buildDims(project: Project): DimsFile {
+/**
+ * Turns the project's plan and entered values into the dims.json the model and checker read.
+ * Skipped readings are left out entirely. A blank non-required reading falls back to the plan's
+ * default_mm, flagged as estimated. Throws if a required reading is neither entered nor skipped.
+ */
+export function buildDims(project: Project): DimsFile {
   if (!project.plan) throw new Error('No plan yet');
+  const skipped = new Set(project.skipped);
   const requested = project.plan.dimensions.flatMap(d => {
-    const value = project.values[d.id] ?? d.default_mm;
-    if (value == null) { if (d.critical) throw new Error(`Missing critical dimension: ${d.name}`); return []; }
-    return [{ id: d.id, name: d.name, kind: d.kind, hole: d.hole, value_mm: value }];
+    if (skipped.has(d.id)) return [];
+    const entered = project.values[d.id];
+    if (entered != null) return [{ id: d.id, name: d.name, kind: d.kind, hole: d.hole, value_mm: entered, estimated: false }];
+    if (d.priority === 'required') throw new Error(`Missing required dimension: ${d.name}`);
+    if (d.default_mm == null) return [];
+    return [{ id: d.id, name: d.name, kind: d.kind, hole: d.hole, value_mm: d.default_mm, estimated: true }];
   });
-  return dimsFileSchema.parse({ title: project.title, plan: project.plan, description: project.description, dimensions: [...requested, ...project.extra], constants, notes: project.notes });
+  return dimsFileSchema.parse({ title: project.title, plan: project.plan, description: project.description, dimensions: [...requested, ...project.extra], constants, notes: project.notes, skipped: project.skipped });
 }
 
 /** Starts a run and returns immediately. Progress is written to project.json. */

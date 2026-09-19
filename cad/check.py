@@ -2,8 +2,18 @@
 
 Run by Codex inside a run folder. Exit code 0 on pass, 1 on any failure. Never raises.
 """
-import json, math, sys, traceback
+import json, math, os, sys, traceback
 from pathlib import Path
+
+# Codex runs commands through a login shell, which puts Homebrew's python ahead of the venv on PATH.
+# If this interpreter lacks cadquery, re-exec with the one the server told us about.
+try:
+    import cadquery  # noqa: F401
+except ModuleNotFoundError:
+    _venv_python = os.environ.get("CHECK_PYTHON")
+    if _venv_python and os.path.exists(_venv_python) and os.path.realpath(_venv_python) != os.path.realpath(sys.executable):
+        os.execv(_venv_python, [_venv_python, *sys.argv])
+    raise
 
 HOLE_TOL = 0.2      # mm, center and radius
 EXTENT_TOL = 0.5    # mm

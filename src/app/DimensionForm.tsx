@@ -1,34 +1,62 @@
 import { useEffect, useState } from 'react';
-import type { Project, RequestedDimension } from '../shared/types';
+import type { DimensionPriority, Project, RequestedDimension } from '../shared/types';
+
+/** What the photo should light up: one reading, or every reading of a group. */
+export type Target = { ids: string[]; label: string };
 
 type Props = {
   project: Project;
-  active: string | null;
-  onFocus: (id: string) => void;
-  onHover: (id: string | null) => void;
+  active: Target | null;
+  onFocus: (target: Target | null) => void;
+  onHover: (target: Target | null) => void;
   onChange: (patch: Pick<Project, 'values' | 'extra' | 'notes'>) => void;
   onAsk: (dimensionId: string, question: string) => Promise<unknown>;
-  onSkip: (dimensionId: string) => void;
+  onSkipped: (ids: string[]) => void;   // the full new skipped list
 };
 
-export function missingCritical(project: Project): RequestedDimension[] {
-  return project.plan?.dimensions.filter(d => d.critical && project.values[d.id] == null) ?? [];
+export function missingRequired(project: Project): RequestedDimension[] {
+  const skipped = new Set(project.skipped);
+  return project.plan?.dimensions.filter(d => d.priority === 'required' && !skipped.has(d.id) && project.values[d.id] == null) ?? [];
+}
+
+type Group = { key: string; label: string; dims: RequestedDimension[] };
+const tiers: { priority: DimensionPriority; title: string; note: string }[] = [
+  { priority: 'required', title: 'Required for fit', note: 'Generate unlocks once each of these is measured or skipped.' },
+  { priority: 'recommended', title: 'Recommended', note: 'Openings and clearances. Left blank, the model uses its own estimate from the photos with extra clearance. Skip what you do not care about.' },
+  { priority: 'optional', title: 'Optional', note: 'Cosmetic. Defaults are used unless you change them.' },
+];
+
+/** One tier's readings grouped by feature label in first-seen order. A standalone reading is its own group. */
+function groupsOf(dims: RequestedDimension[], priority: DimensionPriority): Group[] {
+  const out: Group[] = [];
+  for (const d of dims) {
+    if (d.priority !== priority) continue;
+    const label = d.group ?? d.name;
+    const key = `${priority}:${label}`;
+    let g = out.find(x => x.key === key);
+    if (!g) { g = { key, label, dims: [] }; out.push(g); }
+    g.dims.push(d);
+  }
+  return out;
 }
 
 /**
- * Inputs are drafts in local state and save on blur or Enter. Saving on every keystroke
- * let the server refetch overwrite the field mid-typing and drop digits.
+ * Readings sorted most to least relevant: three tiers, each a list of collapsible feature groups.
+ * Clicking a group lights every one of its callouts on the photo; clicking a field lights just that one.
+ * Inputs are drafts in local state and save on blur or Enter. Saving on every keystroke let the
+ * server refetch overwrite the field mid-typing and drop digits.
  */
-export function DimensionForm({ project, active, onFocus, onHover, onChange, onAsk, onSkip }: Props) {
+export function DimensionForm({ project, active, onFocus, onHover, onChange, onAsk, onSkipped }: Props) {
   const plan = project.plan!;
-  const fromProject = () => Object.fromEntries(plan.dimensions.map(d => [d.id, project.values[d.id]?.toString() ?? d.default_mm?.toString() ?? '']));
+  const skipped = new Set(project.skipped);
+  // A required reading must come from the calipers, so a model default is only a placeholder hint there.
+  const fromProject = () => Object.fromEntries(plan.dimensions.map(d => [d.id, project.values[d.id]?.toString() ?? (d.priority === 'required' ? '' : d.default_mm?.toString() ?? '')]));
   const [draft, setDraft] = useState<Record<string, string>>(fromProject);
   const [notes, setNotes] = useState(project.notes);
-  // Re-seed when the server value set changes (a new dimension, or accept-needs clearing a
-  // rejected value). Values only change from a user commit or accept, never from background
-  // polling, so this cannot drop digits mid-typing the way per-keystroke saving did.
   const valuesKey = plan.dimensions.map(d => `${d.id}=${project.values[d.id] ?? ''}`).join('|');
   useEffect(() => { setDraft(fromProject()); setNotes(project.notes); }, [project.id, valuesKey]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const isOpen = (g: Group) => open[g.key] ?? g.dims[0]!.priority === 'required';
 
   const commit = () => {
     const values: Record<string, number> = {};
@@ -39,40 +67,96 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
     const same = JSON.stringify(values) === JSON.stringify(project.values) && notes === project.notes;
     if (!same) onChange({ values, extra: project.extra, notes });
   };
+  const entered = (d: RequestedDimension) => project.values[d.id] != null;
+  const setSkip = (ids: string[], skip: boolean) => {
+    const next = new Set(project.skipped);
+    for (const id of ids) skip ? next.add(id) : next.delete(id);
+    onSkipped([...next]);
+  };
+  const isActiveGroup = (g: Group) => active?.label === g.label && active.ids.length === g.dims.length;
 
   return (
-    <div className="flex flex-col gap-2">
-      {plan.dimensions.map(d => (
-        <div key={d.id} className={`px-1 ${active === d.id ? 'bg-neutral-900' : ''}`} onMouseEnter={() => onHover(d.id)} onMouseLeave={() => onHover(null)}>
-          <label className="grid grid-cols-[1fr_6rem] items-center gap-2">
-            <span>
-              {d.name}{d.critical && <span className="ml-1 text-neutral-400">required</span>}
-              <span className="block text-xs text-neutral-400">{d.why}</span>
-            </span>
-            <input id={`dim-${d.id}`} type="number" step="0.01" inputMode="decimal" aria-label={d.name} placeholder="mm"
-              value={draft[d.id] ?? ''} onFocus={e => { onFocus(d.id); e.target.select(); }} onBlur={commit}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              onChange={e => setDraft({ ...draft, [d.id]: e.target.value })}
-              className="bg-neutral-900 px-2 py-1 text-right" />
-          </label>
-          <Clarify dimension={d} thread={project.clarifications[d.id] ?? []} onAsk={q => onAsk(d.id, q)} onOpen={() => onFocus(d.id)} onSkip={() => onSkip(d.id)} />
-        </div>
-      ))}
+    <div className="flex flex-col gap-5">
+      {tiers.map(tier => {
+        const groups = groupsOf(plan.dimensions, tier.priority);
+        if (groups.length === 0) return null;
+        const all = groups.flatMap(g => g.dims);
+        const live = all.filter(d => !skipped.has(d.id));
+        const done = live.filter(entered).length;
+        return (
+          <section key={tier.priority}>
+            <div className="flex items-baseline gap-3 border-b border-neutral-800 pb-1">
+              <h2 className="font-semibold">{tier.title}</h2>
+              <span className="text-neutral-400">{done} of {live.length}{all.length > live.length ? `, ${all.length - live.length} skipped` : ''}</span>
+              {tier.priority !== 'required' && (
+                <button type="button" className="ml-auto text-xs text-neutral-500 hover:text-white" onClick={() => setSkip(all.map(d => d.id), live.length > 0)}>
+                  {live.length > 0 ? 'skip all' : 'unskip all'}
+                </button>
+              )}
+            </div>
+            <p className="mb-1 text-xs text-neutral-500">{tier.note}</p>
+            {groups.map(g => {
+              const ids = g.dims.map(d => d.id);
+              const gSkipped = ids.every(id => skipped.has(id));
+              const gLive = g.dims.filter(d => !skipped.has(d.id));
+              const target: Target = { ids, label: g.label };
+              return (
+                <div key={g.key} className={isActiveGroup(g) ? 'bg-neutral-900' : ''}>
+                  <div className="flex cursor-pointer select-none items-center gap-2 px-1 py-1" onMouseEnter={() => onHover(target)} onMouseLeave={() => onHover(null)}
+                    onClick={() => { setOpen({ ...open, [g.key]: !isOpen(g) }); onFocus(target); }}>
+                    <span className="w-3 text-neutral-500">{isOpen(g) ? '▾' : '▸'}</span>
+                    <span className={gSkipped ? 'text-neutral-500 line-through' : ''}>{g.label}</span>
+                    <span className="text-xs text-neutral-400">{gSkipped ? 'skipped' : `${gLive.filter(entered).length}/${gLive.length}`}</span>
+                    <button type="button" className="ml-auto text-xs text-neutral-500 hover:text-white" onClick={e => { e.stopPropagation(); setSkip(ids, !gSkipped); }}>
+                      {gSkipped ? 'unskip' : 'skip'}
+                    </button>
+                  </div>
+                  {isOpen(g) && g.dims.map(d => {
+                    const s = skipped.has(d.id);
+                    const isActive = active?.ids.length === 1 && active.ids[0] === d.id;
+                    const one: Target = { ids: [d.id], label: d.name };
+                    return (
+                      <div key={d.id} className={`ml-5 px-1 py-0.5 ${isActive ? 'bg-neutral-900' : ''} ${s ? 'opacity-50' : ''}`} onMouseEnter={() => onHover(one)} onMouseLeave={() => onHover(null)}>
+                        <label className="grid grid-cols-[1fr_6rem] items-center gap-2">
+                          <span>
+                            <span className={s ? 'line-through' : ''}>{d.name}</span>
+                            <span className="block text-xs text-neutral-400">{d.why}</span>
+                          </span>
+                          <input id={`dim-${d.id}`} type="number" step="0.01" inputMode="decimal" aria-label={d.name} disabled={s}
+                            placeholder={d.priority === 'required' && d.default_mm != null ? `~${d.default_mm}, measure it` : 'mm'}
+                            value={draft[d.id] ?? ''} onFocus={e => { onFocus(one); e.target.select(); }} onBlur={commit}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            onChange={e => setDraft({ ...draft, [d.id]: e.target.value })}
+                            className="bg-neutral-900 px-2 py-1 text-right disabled:opacity-40" />
+                        </label>
+                        <div className="flex gap-3 text-xs">
+                          <button type="button" onClick={() => setSkip([d.id], !s)} className="text-neutral-500 hover:text-white">{s ? 'Unskip' : "Doesn't apply, skip"}</button>
+                          {!s && <Clarify dimension={d} thread={project.clarifications[d.id] ?? []} onAsk={q => onAsk(d.id, q)} onOpen={() => onFocus(one)} />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </section>
+        );
+      })}
       <button type="button" className="w-fit text-neutral-400 hover:text-white" onClick={() => {
         const name = prompt('Dimension name');
         const value = Number(prompt('Value in mm'));
-        if (name && value > 0) onChange({ values: project.values, extra: [...project.extra, { id: `user_${project.extra.length}`, name, kind: 'other', hole: null, value_mm: value }], notes });
+        if (name && value > 0) onChange({ values: project.values, extra: [...project.extra, { id: `user_${project.extra.length}`, name, kind: 'other', hole: null, value_mm: value, estimated: false }], notes });
       }}>+ add a measurement the model did not ask for</button>
       {project.extra.map(x => <div key={x.id} className="px-1 text-neutral-400">{x.name}: {x.value_mm} mm</div>)}
       <textarea value={notes} placeholder="Notes for the next generation, e.g. holes were 0.5 mm too far apart"
         onChange={e => setNotes(e.target.value)} onBlur={commit}
-        className="mt-2 min-h-20 bg-neutral-900 p-2" />
+        className="min-h-20 bg-neutral-900 p-2" />
     </div>
   );
 }
 
 /** Q&A thread under one dimension. "Unclear?" opens a one-line question box; answers stay under the field. */
-function Clarify({ dimension, thread, onAsk, onOpen, onSkip }: { dimension: RequestedDimension; thread: { question: string; answer: string }[]; onAsk: (q: string) => Promise<unknown>; onOpen: () => void; onSkip: () => void }) {
+function Clarify({ dimension, thread, onAsk, onOpen }: { dimension: RequestedDimension; thread: { question: string; answer: string }[]; onAsk: (q: string) => Promise<unknown>; onOpen: () => void }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [pending, setPending] = useState(false);
@@ -85,7 +169,7 @@ function Clarify({ dimension, thread, onAsk, onOpen, onSkip }: { dimension: Requ
     finally { setPending(false); }
   };
   return (
-    <div className="text-xs">
+    <div className="flex-1">
       {thread.map((t, i) => (
         <div key={i} className="mt-1 border-l border-neutral-700 pl-2">
           <div className="text-neutral-400">Q: {t.question}</div>
@@ -99,10 +183,7 @@ function Clarify({ dimension, thread, onAsk, onOpen, onSkip }: { dimension: Requ
           <button type="button" onClick={() => void send()} disabled={pending || !question.trim()} className="bg-white px-2 text-black disabled:opacity-40">{pending ? 'Asking' : 'Ask'}</button>
         </div>
       ) : (
-        <span className="flex gap-3">
-          <button type="button" onClick={() => { setOpen(true); onOpen(); }} className="text-neutral-500 hover:text-white">Unclear? Ask about this measurement</button>
-          {dimension.critical && <button type="button" onClick={onSkip} className="text-neutral-500 hover:text-white">Doesn't apply, skip</button>}
-        </span>
+        <button type="button" onClick={() => { setOpen(true); onOpen(); }} className="text-neutral-500 hover:text-white">Unclear? Ask about this measurement</button>
       )}
       {error && <div className="text-red-400">{error}</div>}
     </div>

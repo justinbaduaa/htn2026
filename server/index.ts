@@ -6,7 +6,7 @@ import { model } from './model';
 import { askPrompt, planPrompt } from './prompts';
 import * as store from './store';
 import * as generate from './generate';
-import { enteredDimensionSchema, requestedDimensionSchema } from '../src/shared/types';
+import { enteredDimensionSchema, normalizePlan, requestedDimensionSchema } from '../src/shared/types';
 import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 
@@ -36,7 +36,9 @@ app.post('/api/projects/:id/plan', async c => {
     const plan = await model.plan(paths, planPrompt(project.description));
     // Models sometimes number photos from 1. Keep every callout on a photo that exists.
     plan.dimensions = plan.dimensions.map(d => ({ ...d, photo: Math.min(Math.max(d.photo, 0), project.photos.length - 1) }));
+    normalizePlan(plan);
     project.plan = plan; project.title = plan.title;
+    project.skipped = [];
     await store.save(project);
     return c.json(project);
   } catch (error) {
@@ -64,7 +66,8 @@ app.post('/api/projects/:id/accept-needs/:n', async c => {
   if (!run?.needs || !project.plan) return c.json({ error: 'No pending dimensions.' }, 400);
   const byId = new Map(project.plan.dimensions.map(d => [d.id, d]));
   for (const raw of run.needs) {
-    const dim = requestedDimensionSchema.parse({ ...raw, critical: true });
+    const dim = requestedDimensionSchema.parse({ ...raw, critical: true, priority: 'required' });
+    project.skipped = project.skipped.filter(id => id !== dim.id);
     const existing = byId.get(dim.id);
     if (existing) {
       Object.assign(existing, dim);
@@ -92,7 +95,7 @@ app.post('/api/projects/:id/ask', async c => {
     const result = await model.ask(paths, askPrompt(project.description, project.plan, dimension, prior, body.question));
     project.clarifications[dimension.id] = [...prior, { question: body.question, answer: result.answer }];
     if (result.revised && result.revised.id === dimension.id) {
-      project.plan.dimensions[index] = { ...result.revised, kind: dimension.kind, hole: dimension.hole, critical: dimension.critical,
+      project.plan.dimensions[index] = { ...result.revised, kind: dimension.kind, hole: dimension.hole, critical: dimension.critical, priority: dimension.priority,
         photo: Math.min(Math.max(result.revised.photo, 0), project.photos.length - 1) };
     }
     await store.save(project);
@@ -103,13 +106,14 @@ app.post('/api/projects/:id/ask', async c => {
   }
 });
 
-// The user says a requested measurement does not apply. It stops blocking Generate; the model is told it was skipped.
-app.post('/api/projects/:id/skip/:dim', async c => {
+// The full set of requested readings the user will not give. They stop blocking Generate, are left out of
+// dims.json, and the model is told not to ask for them again.
+const skippedBody = z.strictObject({ ids: z.array(z.string()) });
+app.put('/api/projects/:id/skipped', async c => {
+  const body = skippedBody.parse(await c.req.json());
   const project = await store.load(c.req.param('id'));
-  const d = project.plan?.dimensions.find(x => x.id === c.req.param('dim'));
-  if (!d) return c.json({ error: 'Unknown dimension.' }, 400);
-  d.critical = false;
-  d.why = `${d.why} (User skipped this: it does not apply to their object.)`.slice(0, 400);
+  const known = new Set(project.plan?.dimensions.map(d => d.id) ?? []);
+  project.skipped = [...new Set(body.ids.filter(id => known.has(id)))];
   await store.save(project);
   return c.json(project);
 });

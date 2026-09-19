@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { projectSchema, type Project } from '../src/shared/types';
+import { normalizePlan, projectSchema, type Project } from '../src/shared/types';
 
 export const ROOT = join(process.cwd(), 'projects');
 export const dir = (id: string) => join(ROOT, id);
@@ -14,7 +14,9 @@ export async function list(): Promise<Project[]> {
 }
 
 export async function load(id: string): Promise<Project> {
-  return projectSchema.parse(JSON.parse(await readFile(join(dir(id), 'project.json'), 'utf8')));
+  const project = projectSchema.parse(JSON.parse(await readFile(join(dir(id), 'project.json'), 'utf8')));
+  if (project.plan) normalizePlan(project.plan);
+  return project;
 }
 
 export async function save(project: Project) {
@@ -40,7 +42,7 @@ export async function create(photos: { data: Uint8Array }[], description: string
     await writeFile(join(dir(id), 'photos', name), p.data);
     names.push(name);
   }
-  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, description, plan: null, values: {}, extra: [], notes: '', clarifications: {}, runs: [] };
+  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, description, plan: null, values: {}, extra: [], skipped: [], notes: '', clarifications: {}, runs: [] };
   await save(project);
   return project;
 }

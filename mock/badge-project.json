@@ -1,0 +1,1007 @@
+{
+ "id": "20260919161816",
+ "title": "Two-piece Game Boy-style badge case",
+ "created": "2026-09-19T16:18:16.242Z",
+ "photos": [
+  "0.jpg",
+  "1.jpg",
+  "2.jpg",
+  "3.jpg"
+ ],
+ "description": " I've attached photos of our badge for our hackathon. It's a PCB design with batteries, an LCD, a charger, and everything else. I'd like to create a case that will be printed in two separate parts and installed through the four holes.\r\n\r\nWe have some M4 16 mm screws and some M4 7 mm hexagonal nuts. I want to install the screws face down on the top of the board and use the nuts on the bottom to screw it up. The LCD and the buttons have to be exposed.\r\n\r\nFor the back, we have to account for the batteries. For the rest, I'm assuming you'll have the right dimensions identified, but there's clearly a fair bit we have to get in order to make it an assault design with Game Boy vibes.",
+ "plan": {
+  "title": "Two-piece Game Boy-style badge case",
+  "summary": "A front bezel and rear shell fastened through all four PCB holes, with screw heads at the front and captive nuts at the back. A broad controls opening exposes all eight buttons; two side windows expose the LEDs. The rear shell clears the batteries and allows replacement after removal. Coordinates use the first photo: bottom-left is X=0, Y=0, including measurements on the mirrored back view. Opening estimates assume a roughly 95 \u00d7 145 mm PCB and must scale to your measured outline. Check the screw stack before printing: 16 mm screws may be too short for a full-depth rear shell, so recessed nut wells are proposed.",
+  "parts": [
+   {
+    "name": "Front bezel",
+    "printed": true,
+    "purpose": "Game Boy-style face with LCD, controls, LED, USB-C, and switch openings."
+   },
+   {
+    "name": "Rear shell",
+    "printed": true,
+    "purpose": "Protects rear electronics and batteries; incorporates recessed captive-nut wells at all four holes."
+   },
+   {
+    "name": "Assembled badge PCB, LCD, and battery holder",
+    "printed": false,
+    "purpose": "Existing electronics enclosed by the case."
+   },
+   {
+    "name": "Two AA batteries",
+    "printed": false,
+    "purpose": "Existing removable power source."
+   },
+   {
+    "name": "Four M4 \u00d7 16 mm screws",
+    "printed": false,
+    "purpose": "Pass from the front through the case and PCB mounting holes."
+   },
+   {
+    "name": "Four M4 hex nuts, nominally 7 mm across flats",
+    "printed": false,
+    "purpose": "Captured in the rear shell to secure the assembly."
+   }
+  ],
+  "dimensions": [
+   {
+    "id": "board_w",
+    "name": "Outline: maximum PCB width",
+    "why": "Sets the case width. Measure the PCB itself, excluding projecting connectors.",
+    "critical": true,
+    "priority": "required",
+    "kind": "extent_x",
+    "hole": null,
+    "group": "Outline",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.105,
+     "y": 0.76,
+     "w": 0.702,
+     "h": 0
+    },
+    "default_mm": null
+   },
+   {
+    "id": "board_h",
+    "name": "Outline: maximum PCB height",
+    "why": "Sets the case height. Measure between the lowest and highest PCB edges.",
+    "critical": true,
+    "priority": "required",
+    "kind": "extent_y",
+    "hole": null,
+    "group": "Outline",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.81,
+     "y": 0.045,
+     "w": 0,
+     "h": 0.801
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h1_x",
+    "name": "Top-left hole: center X",
+    "why": "Positions the front-view top-left fastener from the PCB's left datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_x",
+    "hole": "h1",
+    "group": "Top-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.248,
+     "y": 0.054,
+     "w": 0.034,
+     "h": 0.027
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h1_y",
+    "name": "Top-left hole: center Y",
+    "why": "Positions this fastener from the PCB's bottom datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_y",
+    "hole": "h1",
+    "group": "Top-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.248,
+     "y": 0.054,
+     "w": 0.034,
+     "h": 0.027
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h1_d",
+    "name": "Top-left hole: inside diameter",
+    "why": "Checks that the supplied M4 screw fits this hole.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_diameter",
+    "hole": "h1",
+    "group": "Top-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.248,
+     "y": 0.054,
+     "w": 0.034,
+     "h": 0.027
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h2_x",
+    "name": "Top-right hole: center X",
+    "why": "Positions the front-view top-right fastener from the left datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_x",
+    "hole": "h2",
+    "group": "Top-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.65,
+     "y": 0.063,
+     "w": 0.034,
+     "h": 0.026
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h2_y",
+    "name": "Top-right hole: center Y",
+    "why": "Positions this fastener from the bottom datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_y",
+    "hole": "h2",
+    "group": "Top-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.65,
+     "y": 0.063,
+     "w": 0.034,
+     "h": 0.026
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h2_d",
+    "name": "Top-right hole: inside diameter",
+    "why": "Checks M4 screw clearance at this hole.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_diameter",
+    "hole": "h2",
+    "group": "Top-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.65,
+     "y": 0.063,
+     "w": 0.034,
+     "h": 0.026
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h3_x",
+    "name": "Bottom-left hole: center X",
+    "why": "Positions the front-view bottom-left fastener from the left datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_x",
+    "hole": "h3",
+    "group": "Bottom-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.224,
+     "y": 0.81,
+     "w": 0.037,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h3_y",
+    "name": "Bottom-left hole: center Y",
+    "why": "Positions this fastener from the bottom datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_y",
+    "hole": "h3",
+    "group": "Bottom-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.224,
+     "y": 0.81,
+     "w": 0.037,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h3_d",
+    "name": "Bottom-left hole: inside diameter",
+    "why": "Checks M4 screw clearance at this hole.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_diameter",
+    "hole": "h3",
+    "group": "Bottom-left hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.224,
+     "y": 0.81,
+     "w": 0.037,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h4_x",
+    "name": "Bottom-right hole: center X",
+    "why": "Positions the front-view bottom-right fastener from the left datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_x",
+    "hole": "h4",
+    "group": "Bottom-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.659,
+     "y": 0.805,
+     "w": 0.035,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h4_y",
+    "name": "Bottom-right hole: center Y",
+    "why": "Positions this fastener from the bottom datum.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_y",
+    "hole": "h4",
+    "group": "Bottom-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.659,
+     "y": 0.805,
+     "w": 0.035,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "h4_d",
+    "name": "Bottom-right hole: inside diameter",
+    "why": "Checks M4 screw clearance at this hole.",
+    "critical": true,
+    "priority": "required",
+    "kind": "hole_diameter",
+    "hole": "h4",
+    "group": "Bottom-right hole",
+    "photo": 0,
+    "shape": "circle",
+    "box": {
+     "x": 0.659,
+     "y": 0.805,
+     "w": 0.035,
+     "h": 0.028
+    },
+    "default_mm": null
+   },
+   {
+    "id": "front_z",
+    "name": "Front clearance: tallest component height",
+    "why": "Measure from the front PCB surface to its tallest component, including buttons and LCD frame. Sets a common clearance plane above all front electronics.",
+    "critical": true,
+    "priority": "required",
+    "kind": "extent_z",
+    "hole": null,
+    "group": "Front clearance",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.237,
+     "y": 0.401,
+     "w": 0.194,
+     "h": 0.031
+    },
+    "default_mm": null
+   },
+   {
+    "id": "rear_z",
+    "name": "Rear clearance: loaded battery holder height",
+    "why": "Measure from the rear PCB surface to the highest point of the holder or installed batteries. The entire rear cavity uses this depth, so no local battery bulge measurements are needed.",
+    "critical": true,
+    "priority": "required",
+    "kind": "extent_z",
+    "hole": null,
+    "group": "Rear clearance",
+    "photo": 3,
+    "shape": "line",
+    "box": {
+     "x": 0.697,
+     "y": 0.28,
+     "w": 0,
+     "h": 0.084
+    },
+    "default_mm": null
+   },
+   {
+    "id": "head_d",
+    "name": "Fasteners: screw head diameter",
+    "why": "Sizes the front screw-head recesses. Measure one supplied screw.",
+    "critical": true,
+    "priority": "required",
+    "kind": "other",
+    "hole": null,
+    "group": "Fasteners",
+    "photo": 0,
+    "shape": "none",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "h": 0
+    },
+    "default_mm": null
+   },
+   {
+    "id": "nut_af",
+    "name": "Fasteners: nut width across flats",
+    "why": "Sizes the captive hexagonal pockets. The default is your stated 7 mm; measure between opposite flat faces.",
+    "critical": true,
+    "priority": "required",
+    "kind": "other",
+    "hole": null,
+    "group": "Fasteners",
+    "photo": 0,
+    "shape": "none",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "h": 0
+    },
+    "default_mm": 7
+   },
+   {
+    "id": "pcb_t",
+    "name": "Outline: bare PCB thickness",
+    "why": "Sets the board ledge and screw stack. Estimated at 1.6 mm; measure away from solder and components.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Outline",
+    "photo": 3,
+    "shape": "box",
+    "box": {
+     "x": 0.751,
+     "y": 0.361,
+     "w": 0.091,
+     "h": 0.015
+    },
+    "default_mm": 1.6
+   },
+   {
+    "id": "lcd_x",
+    "name": "LCD opening: left X",
+    "why": "Measure to the left edge of the complete white LCD frame. Estimated at 15 mm; exposing the full frame avoids loading the glass.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "LCD opening",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.212,
+     "y": 0.136,
+     "w": 0.379,
+     "h": 0.196
+    },
+    "default_mm": 15
+   },
+   {
+    "id": "lcd_y",
+    "name": "LCD opening: bottom Y",
+    "why": "Measure to the bottom edge of the LCD frame. Estimated at 93 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "LCD opening",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.212,
+     "y": 0.136,
+     "w": 0.379,
+     "h": 0.196
+    },
+    "default_mm": 93
+   },
+   {
+    "id": "lcd_w",
+    "name": "LCD opening: frame width",
+    "why": "Measure the full frame width. Estimated at 51 mm; printing clearance is added separately.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "LCD opening",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.212,
+     "y": 0.329,
+     "w": 0.379,
+     "h": 0
+    },
+    "default_mm": 51
+   },
+   {
+    "id": "lcd_h",
+    "name": "LCD opening: frame height",
+    "why": "Measure the full frame height. Estimated at 35 mm. The shared front clearance also protects the adjacent ribbon and connector.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "LCD opening",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.59,
+     "y": 0.136,
+     "w": 0,
+     "h": 0.196
+    },
+    "default_mm": 35
+   },
+   {
+    "id": "controls_x",
+    "name": "Controls opening: left X",
+    "why": "Measure to the leftmost edge of the Left button assembly. Estimated at 10 mm. One opening exposes the D-pad, A, B, Home, and Start.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Controls opening",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.181,
+     "y": 0.502,
+     "w": 0.561,
+     "h": 0.214
+    },
+    "default_mm": 10
+   },
+   {
+    "id": "controls_y",
+    "name": "Controls opening: bottom Y",
+    "why": "Measure to the lowest edge of the Home or Start assembly. Estimated at 24 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Controls opening",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.181,
+     "y": 0.502,
+     "w": 0.561,
+     "h": 0.214
+    },
+    "default_mm": 24
+   },
+   {
+    "id": "controls_w",
+    "name": "Controls opening: cluster width",
+    "why": "Measure from the Left assembly's left edge to the A assembly's right edge. Estimated at 75 mm; add finger clearance around the opening.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Controls opening",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.181,
+     "y": 0.718,
+     "w": 0.561,
+     "h": 0
+    },
+    "default_mm": 75
+   },
+   {
+    "id": "controls_h",
+    "name": "Controls opening: cluster height",
+    "why": "Measure from the lowest Home/Start assembly edge to the highest Up assembly edge. Estimated at 39 mm. With no printed actuators, button travel stays unobstructed.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Controls opening",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.746,
+     "y": 0.502,
+     "w": 0,
+     "h": 0.214
+    },
+    "default_mm": 39
+   },
+   {
+    "id": "usb_y",
+    "name": "USB-C port: center Y",
+    "why": "Measure the port center from the bottom PCB datum. Estimated at 84 mm. The opening passes through the left wall.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "USB-C port",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.12,
+     "y": 0.355,
+     "w": 0.081,
+     "h": 0.054
+    },
+    "default_mm": 84
+   },
+   {
+    "id": "usb_span",
+    "name": "USB-C port: cable plug width along Y",
+    "why": "Measure the widest part of the cable plug that must enter the case. Estimated at 12 mm; this clears the plug body as well as the receptacle.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "USB-C port",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.531,
+     "y": 0.401,
+     "w": 0.071,
+     "h": 0.027
+    },
+    "default_mm": 12
+   },
+   {
+    "id": "usb_height",
+    "name": "USB-C port: cable plug thickness",
+    "why": "Measure the cable plug body perpendicular to the PCB. Estimated at 7 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "USB-C port",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.531,
+     "y": 0.401,
+     "w": 0.071,
+     "h": 0.027
+    },
+    "default_mm": 7
+   },
+   {
+    "id": "usb_z",
+    "name": "USB-C port: center height above front PCB",
+    "why": "Locates the wall opening perpendicular to the board. Estimated at 1.8 mm from the front PCB face.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "extent_z",
+    "hole": null,
+    "group": "USB-C port",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.536,
+     "y": 0.406,
+     "w": 0.061,
+     "h": 0.019
+    },
+    "default_mm": 1.8
+   },
+   {
+    "id": "power_x",
+    "name": "Top power switch: center X",
+    "why": "Measure the switch body's midpoint from the left datum. Estimated at 34 mm. The opening is through the top edge.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Top power switch",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.331,
+     "y": 0.039,
+     "w": 0.064,
+     "h": 0.039
+    },
+    "default_mm": 34
+   },
+   {
+    "id": "power_w",
+    "name": "Top power switch: access width",
+    "why": "Measure the full switch body width along X; clearance will be added for finger access and slider travel. Estimated at 9 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Top power switch",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.331,
+     "y": 0.058,
+     "w": 0.064,
+     "h": 0
+    },
+    "default_mm": 9
+   },
+   {
+    "id": "power_h",
+    "name": "Top power switch: access height",
+    "why": "Measure the switch's full thickness perpendicular to the PCB. Estimated at 4 mm; the opening extends through the wall to avoid limiting outward projection.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Top power switch",
+    "photo": 3,
+    "shape": "box",
+    "box": {
+     "x": 0.439,
+     "y": 0.353,
+     "w": 0.092,
+     "h": 0.02
+    },
+    "default_mm": 4
+   },
+   {
+    "id": "power_z",
+    "name": "Top power switch: center height above front PCB",
+    "why": "Locates the switch opening relative to the front PCB surface. Estimated at 1.5 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "extent_z",
+    "hole": null,
+    "group": "Top power switch",
+    "photo": 3,
+    "shape": "box",
+    "box": {
+     "x": 0.439,
+     "y": 0.353,
+     "w": 0.092,
+     "h": 0.02
+    },
+    "default_mm": 1.5
+   },
+   {
+    "id": "side_y",
+    "name": "Left-edge switch: center Y",
+    "why": "Measure the center of the slider above the USB-C port from the bottom datum. Estimated at 95 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left-edge switch",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.128,
+     "y": 0.301,
+     "w": 0.05,
+     "h": 0.055
+    },
+    "default_mm": 95
+   },
+   {
+    "id": "side_span",
+    "name": "Left-edge switch: access length along Y",
+    "why": "Measure the complete switch body's length along Y. Estimated at 9 mm; clearance will include its slider travel and finger access.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left-edge switch",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.15,
+     "y": 0.304,
+     "w": 0,
+     "h": 0.05
+    },
+    "default_mm": 9
+   },
+   {
+    "id": "side_h",
+    "name": "Left-edge switch: access height",
+    "why": "Measure the switch thickness perpendicular to the PCB. Estimated at 4 mm; a through-wall notch clears its projecting slider.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left-edge switch",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.609,
+     "y": 0.403,
+     "w": 0.053,
+     "h": 0.018
+    },
+    "default_mm": 4
+   },
+   {
+    "id": "side_z",
+    "name": "Left-edge switch: center height above front PCB",
+    "why": "Positions the switch notch perpendicular to the PCB. Estimated at 1.5 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "extent_z",
+    "hole": null,
+    "group": "Left-edge switch",
+    "photo": 2,
+    "shape": "box",
+    "box": {
+     "x": 0.609,
+     "y": 0.403,
+     "w": 0.053,
+     "h": 0.018
+    },
+    "default_mm": 1.5
+   },
+   {
+    "id": "led_l_x",
+    "name": "Left LED window: left X",
+    "why": "Measure to the leftmost edge among the three left-side LED packages. Estimated at 12 mm; one long window exposes all three.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left LED window",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.193,
+     "y": 0.077,
+     "w": 0.053,
+     "h": 0.703
+    },
+    "default_mm": 12
+   },
+   {
+    "id": "led_l_y",
+    "name": "Left LED window: bottom Y",
+    "why": "Measure to the bottom edge of the lowest left LED package. Estimated at 12 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left LED window",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.193,
+     "y": 0.077,
+     "w": 0.053,
+     "h": 0.703
+    },
+    "default_mm": 12
+   },
+   {
+    "id": "led_l_w",
+    "name": "Left LED window: width",
+    "why": "Measure the horizontal span containing all three left LED packages. Estimated at 7 mm. This window may merge into the controls opening.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left LED window",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.193,
+     "y": 0.448,
+     "w": 0.053,
+     "h": 0
+    },
+    "default_mm": 7
+   },
+   {
+    "id": "led_l_h",
+    "name": "Left LED window: height",
+    "why": "Measure from the lowest left LED's bottom edge to the highest left LED's top edge. Estimated at 127 mm. The shared front clearance clears their package height.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Left LED window",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.247,
+     "y": 0.077,
+     "w": 0,
+     "h": 0.703
+    },
+    "default_mm": 127
+   },
+   {
+    "id": "led_r_x",
+    "name": "Right LED window: left X",
+    "why": "Measure to the leftmost edge among the three right-side LED packages. Estimated at 73 mm; one long window exposes all three.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Right LED window",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.647,
+     "y": 0.085,
+     "w": 0.064,
+     "h": 0.696
+    },
+    "default_mm": 73
+   },
+   {
+    "id": "led_r_y",
+    "name": "Right LED window: bottom Y",
+    "why": "Measure to the bottom edge of the lowest right LED package. Estimated at 12 mm.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Right LED window",
+    "photo": 0,
+    "shape": "box",
+    "box": {
+     "x": 0.647,
+     "y": 0.085,
+     "w": 0.064,
+     "h": 0.696
+    },
+    "default_mm": 12
+   },
+   {
+    "id": "led_r_w",
+    "name": "Right LED window: width",
+    "why": "Measure the horizontal span containing all three right LED packages. Estimated at 9 mm. This window may merge into the controls opening.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Right LED window",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.647,
+     "y": 0.448,
+     "w": 0.064,
+     "h": 0
+    },
+    "default_mm": 9
+   },
+   {
+    "id": "led_r_h",
+    "name": "Right LED window: height",
+    "why": "Measure from the lowest right LED's bottom edge to the highest right LED's top edge. Estimated at 125 mm. The shared front clearance clears their package height.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Right LED window",
+    "photo": 0,
+    "shape": "line",
+    "box": {
+     "x": 0.712,
+     "y": 0.085,
+     "w": 0,
+     "h": 0.696
+    },
+    "default_mm": 125
+   },
+   {
+    "id": "head_h",
+    "name": "Fasteners: screw head height",
+    "why": "Sets the front recess depth. Estimated at 4 mm because the screw head style is not shown.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Fasteners",
+    "photo": 0,
+    "shape": "none",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "h": 0
+    },
+    "default_mm": 4
+   },
+   {
+    "id": "nut_h",
+    "name": "Fasteners: nut thickness",
+    "why": "Sets the captive-pocket depth and required thread engagement. Estimated at 3.2 mm for a standard M4 nut.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Fasteners",
+    "photo": 0,
+    "shape": "none",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "h": 0
+    },
+    "default_mm": 3.2
+   },
+   {
+    "id": "screw_l",
+    "name": "Fasteners: usable screw length under head",
+    "why": "Checks the front-to-rear fastening stack. Estimated usable length is 16 mm from your description; countersunk screws can have a different usable under-head length.",
+    "critical": false,
+    "priority": "recommended",
+    "kind": "other",
+    "hole": null,
+    "group": "Fasteners",
+    "photo": 0,
+    "shape": "none",
+    "box": {
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "h": 0
+    },
+    "default_mm": 16
+   }
+  ],
+  "question": "What does the left-edge slider above the USB-C port control, and do your M4 screws have flat countersunk heads or raised heads?"
+ },
+ "values": {},
+ "extra": [],
+ "skipped": [],
+ "notes": "",
+ "clarifications": {},
+ "runs": []
+}

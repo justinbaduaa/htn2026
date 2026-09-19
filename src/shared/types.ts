@@ -3,11 +3,19 @@ import { z } from 'zod';
 // Kinds the checker understands. `other` is only passed through to the model.
 export const dimensionKind = z.enum(['extent_x', 'extent_y', 'extent_z', 'hole_diameter', 'hole_x', 'hole_y', 'other']);
 
+// required: Generate is blocked until it is measured or skipped (outline, mounting holes, heights, hardware).
+// recommended: an opening or clearance the part should get right; skippable, and left blank the plan's
+// default_mm is used as an estimate. optional: cosmetic, always with a default.
+export const dimensionPriority = z.enum(['required', 'recommended', 'optional']);
+export type DimensionPriority = z.infer<typeof dimensionPriority>;
+export const priorityOrder: Record<DimensionPriority, number> = { required: 0, recommended: 1, optional: 2 };
+
 export const requestedDimensionSchema = z.strictObject({
   id: z.string().min(1).max(40),
   name: z.string().max(160),
   why: z.string().max(400),
-  critical: z.boolean(),
+  critical: z.boolean(),   // kept for the checker and older plans; always equals priority === 'required' after normalizePlan
+  priority: dimensionPriority.default('optional'),
   kind: dimensionKind,
   hole: z.string().max(20).nullable(),   // groups hole_x, hole_y, hole_diameter for one hole
   // Category this reading belongs to, e.g. "LCD opening", "Up button", "USB-C port". Atomic
@@ -31,6 +39,20 @@ export const planSchema = z.strictObject({
 export type Plan = z.infer<typeof planSchema>;
 export type RequestedDimension = z.infer<typeof requestedDimensionSchema>;
 
+/**
+ * Makes priority the single source of truth and orders the list most to least relevant.
+ * Plans written before priorities existed only carry `critical`; those get a priority derived from it.
+ */
+export function normalizePlan(plan: Plan): Plan {
+  const legacy = plan.dimensions.length > 0 && plan.dimensions.every(d => d.priority === 'optional') && plan.dimensions.some(d => d.critical);
+  for (const d of plan.dimensions) {
+    if (legacy) d.priority = d.critical ? 'required' : 'optional';
+    d.critical = d.priority === 'required';
+  }
+  plan.dimensions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  return plan;
+}
+
 // What the user entered. Model-requested dimensions keep their id; user-added ones get `user_<n>`.
 export const enteredDimensionSchema = z.strictObject({
   id: z.string(),
@@ -38,6 +60,7 @@ export const enteredDimensionSchema = z.strictObject({
   kind: dimensionKind,
   hole: z.string().nullable().default(null),
   value_mm: z.number().nonnegative(),   // 0 is a real answer: "nothing sticks out"
+  estimated: z.boolean().default(false),   // true when value_mm is the plan's default_mm, not a caliper reading
 });
 export const constantsSchema = z.strictObject({ fit_clearance_mm: z.number(), hole_compensation_mm: z.number(), wall_mm: z.number() });
 export const dimsFileSchema = z.strictObject({
@@ -47,6 +70,7 @@ export const dimsFileSchema = z.strictObject({
   dimensions: z.array(enteredDimensionSchema),
   constants: constantsSchema,
   notes: z.string().default(''),
+  skipped: z.array(z.string()).default([]),   // requested dimension ids the user chose not to give
 });
 export type DimsFile = z.infer<typeof dimsFileSchema>;
 
@@ -88,6 +112,7 @@ export const projectSchema = z.strictObject({
   plan: planSchema.nullable(),
   values: z.record(z.string(), z.number()),          // dimension id -> mm
   extra: z.array(enteredDimensionSchema),            // user-added dimensions
+  skipped: z.array(z.string()).default([]),          // requested dimension ids the user passed on; excluded from dims.json
   notes: z.string(),
   clarifications: z.record(z.string(), z.array(clarificationSchema)).default({}),   // dimension id -> Q&A thread
   runs: z.array(runSchema),
