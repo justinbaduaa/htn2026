@@ -68,7 +68,9 @@ async function structured<T>(photoPaths: string[], prompt: string, schema: z.Zod
     const images = photoPaths.flatMap(p => ['--image', p]);
     await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', 'model_reasoning_effort="medium"',
       '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
-      { cwd: dir, eventsPath: join(dir, 'events.jsonl'), timeoutMs: 240_000 });
+      // A full functional decomposition (every button, LED, port, switch as its own reading) runs
+      // ~5 min at medium reasoning. ask() shares this path but finishes fast, so the wider ceiling is free.
+      { cwd: dir, eventsPath: join(dir, 'events.jsonl'), timeoutMs: 420_000 });
     return schema.parse(JSON.parse(await readFile(out, 'utf8')));
   } finally { await rm(dir, { recursive: true, force: true }); }
 }

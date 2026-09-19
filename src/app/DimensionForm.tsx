@@ -24,7 +24,11 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
   const fromProject = () => Object.fromEntries(plan.dimensions.map(d => [d.id, project.values[d.id]?.toString() ?? d.default_mm?.toString() ?? '']));
   const [draft, setDraft] = useState<Record<string, string>>(fromProject);
   const [notes, setNotes] = useState(project.notes);
-  useEffect(() => { setDraft(fromProject()); setNotes(project.notes); }, [project.id, plan.dimensions.length]);
+  // Re-seed when the server value set changes (a new dimension, or accept-needs clearing a
+  // rejected value). Values only change from a user commit or accept, never from background
+  // polling, so this cannot drop digits mid-typing the way per-keystroke saving did.
+  const valuesKey = plan.dimensions.map(d => `${d.id}=${project.values[d.id] ?? ''}`).join('|');
+  useEffect(() => { setDraft(fromProject()); setNotes(project.notes); }, [project.id, valuesKey]);
 
   const commit = () => {
     const values: Record<string, number> = {};

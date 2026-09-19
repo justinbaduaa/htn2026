@@ -10,6 +10,10 @@ export const requestedDimensionSchema = z.strictObject({
   critical: z.boolean(),
   kind: dimensionKind,
   hole: z.string().max(20).nullable(),   // groups hole_x, hole_y, hole_diameter for one hole
+  // Category this reading belongs to, e.g. "LCD opening", "Up button", "USB-C port". Atomic
+  // readings for one feature share a group so the UI can show collapsible, check-off categories.
+  // null for a standalone reading. The hole grouping above still drives the checker.
+  group: z.string().max(80).nullable().default(null),
   photo: z.number().int().min(0),
   // How to draw the callout. line: from (x,y) to (x+w,y+h). circle: inscribed in the box. none: not visible in the photo.
   shape: z.enum(['box', 'line', 'circle', 'none']).default('box'),
@@ -21,7 +25,7 @@ export const planSchema = z.strictObject({
   title: z.string().max(100),
   summary: z.string().max(800),
   parts: z.array(z.strictObject({ name: z.string().max(60), printed: z.boolean(), purpose: z.string().max(200) })).max(8),
-  dimensions: z.array(requestedDimensionSchema).max(40),   // the prompt asks for at most 20; accepted mid-run requests can push past that
+  dimensions: z.array(requestedDimensionSchema).max(120),   // one number per reading, so a fully decomposed part runs well past 20; accepted mid-run requests push higher still
   question: z.string().max(400),   // non-empty only when photos are unusable
 });
 export type Plan = z.infer<typeof planSchema>;
@@ -54,7 +58,7 @@ export const checkResultSchema = z.strictObject({
 export type CheckResult = z.infer<typeof checkResultSchema>;
 
 // Written by the model when it needs a measurement it does not have.
-export const needsFileSchema = z.strictObject({ dimensions: z.array(requestedDimensionSchema).min(1).max(20) });
+export const needsFileSchema = z.strictObject({ dimensions: z.array(requestedDimensionSchema).min(1).max(40) });
 
 // A user question about one requested dimension, and the model's answer. The model may also rewrite the dimension to be clearer.
 export const clarificationSchema = z.strictObject({ question: z.string().max(600), answer: z.string().max(1200) });

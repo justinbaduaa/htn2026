@@ -54,13 +54,25 @@ app.put('/api/projects/:id/dimensions', async c => {
   return c.json(project);
 });
 
-// Adds model-requested extra dimensions (from a needs_dimensions run) to the plan as critical.
+// Applies a needs_dimensions run's requests to the plan as critical dimensions.
+// A brand-new id is appended. An id we already have means the model rejected the current
+// value (e.g. a washer OD entered as its inner hole), so we refresh the guidance and clear
+// the stored value to force a re-measure instead of regenerating the same wrong number.
 app.post('/api/projects/:id/accept-needs/:n', async c => {
   const project = await store.load(c.req.param('id'));
   const run = project.runs[Number(c.req.param('n'))];
   if (!run?.needs || !project.plan) return c.json({ error: 'No pending dimensions.' }, 400);
-  const known = new Set(project.plan.dimensions.map(d => d.id));
-  project.plan.dimensions.push(...run.needs.filter(d => !known.has(d.id)).map(d => requestedDimensionSchema.parse({ ...d, critical: true })));
+  const byId = new Map(project.plan.dimensions.map(d => [d.id, d]));
+  for (const raw of run.needs) {
+    const dim = requestedDimensionSchema.parse({ ...raw, critical: true });
+    const existing = byId.get(dim.id);
+    if (existing) {
+      Object.assign(existing, dim);
+      delete project.values[dim.id];
+    } else {
+      project.plan.dimensions.push(dim);
+    }
+  }
   run.needs = null;
   await store.save(project);
   return c.json(project);
