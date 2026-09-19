@@ -9,6 +9,7 @@ export function ProjectPage({ id }: { id: string }) {
   const qc = useQueryClient();
   const [active, setActive] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [photoOverride, setPhotoOverride] = useState<number | null>(null);
   const { data: project } = useQuery({
     queryKey: ['project', id], queryFn: () => api.get(id),
     refetchInterval: q => q.state.data?.runs.some(r => r.status === 'running') ? 2000 : false,
@@ -25,7 +26,6 @@ export function ProjectPage({ id }: { id: string }) {
   const missing = missingCritical(project);
   const running = project.runs.some(r => r.status === 'running');
   const activeDim = project.plan?.dimensions.find(d => d.id === active);
-  const [photoOverride, setPhotoOverride] = useState<number | null>(null);
   const photoIndex = activeDim?.photo ?? photoOverride ?? 0;
   const pick = (dimId: string) => { setActive(dimId); document.getElementById(`dim-${dimId}`)?.focus(); };
   const onPhoto = (i: number) => project.plan?.dimensions.filter(d => d.photo === i).length ?? 0;
