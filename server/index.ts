@@ -22,14 +22,15 @@ app.post('/api/projects', async c => {
   const files = form.getAll('photos').filter((f): f is File => f instanceof File).slice(0, 4);
   if (files.length === 0) return c.json({ error: 'Add at least one photo.' }, 400);
   const photos = await Promise.all(files.map(async f => ({ data: new Uint8Array(await f.arrayBuffer()) })));
-  return c.json(await store.create(photos));
+  const description = String(form.get('description') ?? '').slice(0, 3000);
+  return c.json(await store.create(photos, description));
 });
 
 app.post('/api/projects/:id/plan', async c => {
   const project = await store.load(c.req.param('id'));
   const paths = project.photos.map(p => join(store.dir(project.id), 'photos', p));
   try {
-    const plan = await model.plan(paths, planPrompt);
+    const plan = await model.plan(paths, planPrompt(project.description));
     // Models sometimes number photos from 1. Keep every callout on a photo that exists.
     plan.dimensions = plan.dimensions.map(d => ({ ...d, photo: Math.min(Math.max(d.photo, 0), project.photos.length - 1) }));
     project.plan = plan; project.title = plan.title;

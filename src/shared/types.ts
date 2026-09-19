@@ -37,6 +37,7 @@ export const constantsSchema = z.strictObject({ fit_clearance_mm: z.number(), ho
 export const dimsFileSchema = z.strictObject({
   title: z.string(),
   plan: planSchema,
+  description: z.string().default(''),
   dimensions: z.array(enteredDimensionSchema),
   constants: constantsSchema,
   notes: z.string().default(''),
@@ -69,6 +70,7 @@ export const projectSchema = z.strictObject({
   title: z.string(),
   created: z.string(),
   photos: z.array(z.string()),
+  description: z.string().default(''),   // what the user typed at creation
   plan: planSchema.nullable(),
   values: z.record(z.string(), z.number()),          // dimension id -> mm
   extra: z.array(enteredDimensionSchema),            // user-added dimensions

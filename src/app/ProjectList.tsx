@@ -4,7 +4,7 @@ import { api } from '../shared/api';
 export function ProjectList() {
   const { data } = useQuery({ queryKey: ['projects'], queryFn: api.list });
   if (!data) return null;
-  if (data.length === 0) return <p>No projects. <a className="underline" href="#new">Start one</a>.</p>;
+  if (data.length === 0) return <p>No projects. <a className="underline" href="#">Start one</a>.</p>;
   return (
     <table className="w-full">
       <tbody>{data.map(p => (

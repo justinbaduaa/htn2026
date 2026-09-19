@@ -2,16 +2,36 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../shared/api';
 
+/** Home screen. Photos plus a description, then straight into the plan call so the project page opens with measurements requested. */
 export function NewProject() {
   const [files, setFiles] = useState<File[]>([]);
-  const create = useMutation({ mutationFn: api.create, onSuccess: p => { location.hash = `#p/${p.id}`; } });
+  const [description, setDescription] = useState('');
+  const start = useMutation({
+    mutationFn: async () => {
+      const project = await api.create(files, description);
+      await api.plan(project.id);
+      return project;
+    },
+    onSuccess: p => { location.hash = `#p/${p.id}`; },
+  });
   return (
-    <form onSubmit={e => { e.preventDefault(); create.mutate(files); }} className="flex flex-col gap-4">
-      <label>Photos of the object, 1 to 4, the first one straight on
-        <input type="file" accept="image/*" multiple className="mt-2 block" onChange={e => setFiles([...(e.target.files ?? [])].slice(0, 4))} />
+    <form onSubmit={e => { e.preventDefault(); start.mutate(); }} className="mx-auto flex max-w-xl flex-col gap-5">
+      <label className="flex flex-col gap-2">
+        <span>Photos of the object. One to four, the first one straight on.</span>
+        <input type="file" accept="image/*" multiple onChange={e => setFiles([...(e.target.files ?? [])].slice(0, 4))} />
+        {files.length > 0 && (
+          <div className="flex gap-2">{files.map(f => <img key={f.name} src={URL.createObjectURL(f)} className="h-20" alt="" />)}</div>
+        )}
       </label>
-      <button disabled={files.length === 0 || create.isPending} className="w-fit bg-white px-3 py-1 text-black disabled:opacity-40">Create project</button>
-      {create.error && <p className="text-red-400">{create.error.message}</p>}
+      <label className="flex flex-col gap-2">
+        <span>What is it, and what do you want printed? Mention screws, ports, and how it should mount.</span>
+        <textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-32 bg-neutral-900 p-2"
+          placeholder="Hack the North badge, a PCB the size of a Game Boy. I want a case that screws on using the four M4 holes, with the screen and buttons open." />
+      </label>
+      <button disabled={files.length === 0 || start.isPending} className="w-fit bg-white px-3 py-1 text-black disabled:opacity-40">
+        {start.isPending ? 'Looking at the photos' : 'Identify part and measurements'}
+      </button>
+      {start.error && <p className="text-red-400">{start.error.message}</p>}
     </form>
   );
 }

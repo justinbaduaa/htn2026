@@ -17,7 +17,7 @@ function buildDims(project: Project): DimsFile {
     if (value == null) { if (d.critical) throw new Error(`Missing critical dimension: ${d.name}`); return []; }
     return [{ id: d.id, name: d.name, kind: d.kind, hole: d.hole, value_mm: value }];
   });
-  return dimsFileSchema.parse({ title: project.title, plan: project.plan, dimensions: [...requested, ...project.extra], constants, notes: project.notes });
+  return dimsFileSchema.parse({ title: project.title, plan: project.plan, description: project.description, dimensions: [...requested, ...project.extra], constants, notes: project.notes });
 }
 
 /** Starts a run and returns immediately. Progress is written to project.json. */

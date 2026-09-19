@@ -29,6 +29,7 @@ export function ProjectPage({ id }: { id: string }) {
     <div className="grid gap-6 md:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-3">
         <h1 className="text-lg font-semibold">{project.title}</h1>
+        {project.description && <p className="text-neutral-400">{project.description}</p>}
         {project.plan && <p>{project.plan.summary}</p>}
         <PhotoCallouts src={api.fileUrl(id, 'photos', project.photos[photoIndex]!)} active={active} onPick={focusDim}
           dimensions={project.plan?.dimensions.filter(d => d.photo === photoIndex) ?? []} />

@@ -10,7 +10,7 @@ async function json<T>(input: string, init?: RequestInit): Promise<T> {
 export const api = {
   list: () => json<Project[]>('/api/projects').then(p => p.map(x => projectSchema.parse(x))),
   get: (id: string) => json<Project>(`/api/projects/${id}`).then(p => projectSchema.parse(p)),
-  create: (photos: File[]) => { const f = new FormData(); photos.forEach(p => f.append('photos', p)); return json<Project>('/api/projects', { method: 'POST', body: f }); },
+  create: (photos: File[], description: string) => { const f = new FormData(); photos.forEach(p => f.append('photos', p)); f.append('description', description); return json<Project>('/api/projects', { method: 'POST', body: f }); },
   plan: (id: string) => json<Project>(`/api/projects/${id}/plan`, { method: 'POST' }),
   saveDimensions: (id: string, body: Pick<Project, 'values' | 'extra' | 'notes'>) =>
     json<Project>(`/api/projects/${id}/dimensions`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),

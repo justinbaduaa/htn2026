@@ -5,7 +5,7 @@ import type { DimsFile } from '../src/shared/types';
 // App-owned print constants. The model is told these, it never chooses them.
 export const constants = { fit_clearance_mm: 0.3, hole_compensation_mm: 0.2, wall_mm: 2.4 };
 
-export const planPrompt = `You are helping someone 3D print a part that fits a real object shown in the attached photos, usually a case, mount, bracket, or replacement piece.
+export const planPrompt = (description: string) => `You are helping someone 3D print a part that fits a real object shown in the attached photos, usually a case, mount, bracket, or replacement piece.
 Return JSON matching the schema. Rules:
 - Identify the object and propose the printed part or parts. List parts that are NOT printed (screws, the object itself) with printed=false.
 - List the dimensions the user must measure with calipers. Mark critical=true for anything that affects fit: outline extents, hole centers, hole diameters, tallest component height, mating surfaces, port positions. Mark critical=false for cosmetic dimensions and give a default_mm.
@@ -13,7 +13,10 @@ Return JSON matching the schema. Rules:
 - kinds: extent_x, extent_y, extent_z (tallest point above the object's flat face), hole_x, hole_y, hole_diameter, other.
 - For every dimension give the photo index (0-based: the first attached photo is 0) and a normalized box (0..1, origin top-left) around where the calipers go. Boxes are hints; the name and why must stand on their own.
 - At most 12 dimensions. Prefer fewer. Do not ask for anything you can default safely.
-- If the photos are unusable, set question to what you need and leave dimensions empty. Otherwise question is "".`;
+- If the photos are unusable, set question to what you need and leave dimensions empty. Otherwise question is "".
+
+The user's own description of the object and what they want printed. It overrides anything you infer from the photos:
+${description || '(none given)'}`;
 
 export function generatePrompt(dims: DimsFile, previous: string | null) {
   const dir = join(process.cwd(), 'cad', 'examples');
@@ -37,7 +40,7 @@ dims.json:
 \`\`\`json
 ${JSON.stringify(dims, null, 2)}
 \`\`\`
-${dims.notes ? `\nUser notes about what went wrong last time or what they want changed:\n${dims.notes}\n` : ''}${previous ? `\nPrevious part.py (keep what worked, change what the notes say was wrong):\n\`\`\`python\n${previous}\`\`\`\n` : ''}
+${dims.description ? `\nThe user's description of the object and what they want:\n${dims.description}\n` : ''}${dims.notes ? `\nUser notes about what went wrong last time or what they want changed:\n${dims.notes}\n` : ''}${previous ? `\nPrevious part.py (keep what worked, change what the notes say was wrong):\n\`\`\`python\n${previous}\`\`\`\n` : ''}
 Worked examples in the same contract:
 
 ${examples}`;

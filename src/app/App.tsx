@@ -16,9 +16,9 @@ export function App() {
     <main className="mx-auto max-w-6xl p-6 text-sm">
       <header className="mb-6 flex items-baseline gap-4">
         <a href="#" className="text-base font-semibold">Photo to print</a>
-        <a href="#new" className="text-neutral-400 hover:text-white">New</a>
+        <a href="#projects" className="text-neutral-400 hover:text-white">Projects</a>
       </header>
-      {id ? <ProjectPage id={id} /> : hash === '#new' ? <NewProject /> : <ProjectList />}
+      {id ? <ProjectPage id={id} /> : hash === '#projects' ? <ProjectList /> : <NewProject />}
     </main>
   );
 }

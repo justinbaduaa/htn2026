@@ -22,7 +22,7 @@ export async function save(project: Project) {
   await writeFile(join(dir(project.id), 'project.json'), JSON.stringify(project, null, 2));
 }
 
-export async function create(photos: { data: Uint8Array }[]): Promise<Project> {
+export async function create(photos: { data: Uint8Array }[], description: string): Promise<Project> {
   const id = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   await mkdir(join(dir(id), 'photos'), { recursive: true });
   const names: string[] = [];
@@ -31,7 +31,7 @@ export async function create(photos: { data: Uint8Array }[]): Promise<Project> {
     await writeFile(join(dir(id), 'photos', name), p.data);
     names.push(name);
   }
-  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, plan: null, values: {}, extra: [], notes: '', runs: [] };
+  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, description, plan: null, values: {}, extra: [], notes: '', runs: [] };
   await save(project);
   return project;
 }
