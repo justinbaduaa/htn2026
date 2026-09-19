@@ -26,6 +26,7 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
   const ref = useRef<HTMLDivElement>(null);
   const labelLayer = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<LoadedPart[]>([]);
   const [dimPart, setDimPart] = useState<string | null>(null);   // a part name, 'all', or null for off
   const [listed, setListed] = useState<Listed[]>([]);
@@ -46,10 +47,13 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
 
   useEffect(() => {
     const el = ref.current!;
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    setError(null);
+    let renderer: THREE.WebGLRenderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias: true }); }
+    catch { setError('3D preview is unavailable in this browser. You can still download the model files below.'); return; }
     renderer.setSize(el.clientWidth, HEIGHT); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
-    const scene = new THREE.Scene(); scene.background = new THREE.Color('#0a0a0a');
+    const scene = new THREE.Scene(); scene.background = new THREE.Color('#f2f5f8');
     const camera = new THREE.PerspectiveCamera(40, el.clientWidth / HEIGHT, 1, 4000);
     scene.add(new THREE.HemisphereLight('#ffffff', '#333333', 1.2));
     const dir = new THREE.DirectionalLight('#ffffff', 1.5); dir.position.set(1, -1, 2); scene.add(dir);
@@ -57,9 +61,16 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
     const overlay = new THREE.Group(); scene.add(overlay);
     sceneRef.current = { renderer, scene, camera, controls, overlay, labels: [] };
     controls.addEventListener('change', render);
+    render();
+    const resize = new ResizeObserver(() => {
+      const width = Math.max(el.clientWidth, 1);
+      camera.aspect = width / HEIGHT; camera.updateProjectionMatrix();
+      renderer.setSize(width, HEIGHT); render();
+    });
+    resize.observe(el);
     let cancelled = false;
     loadParts(parts).then(loadedParts => {
-      if (cancelled) return;
+      if (cancelled) { loadedParts.forEach(p => p.geometry.dispose()); return; }
       const offsets = layoutOffsets(loadedParts);
       const group = new THREE.Group(); scene.add(group);
       loadedParts.forEach((p, i) => { const m = partMesh(p, 'viewer'); m.position.x = offsets[i]!; group.add(m); });
@@ -70,8 +81,16 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
       controls.target.copy(center); controls.update();
       setLoaded(loadedParts);
       render();
-    });
-    return () => { cancelled = true; controls.dispose(); renderer.dispose(); el.removeChild(renderer.domElement); sceneRef.current = null; setLoaded([]); };
+    }).catch(e => { if (!cancelled) setError(`Could not load the preview: ${e.message}`); });
+    return () => { resize.disconnect(); cancelled = true; controls.dispose();
+      scene.traverse(object => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+          object.geometry.dispose();
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.forEach(material => material.dispose());
+        }
+      });
+      renderer.dispose(); el.removeChild(renderer.domElement); sceneRef.current = null; setLoaded([]); };
   }, [key]);
 
   // Dimension overlay: rebuilt when the parts load, the dims arrive, or the toggle flips.
@@ -101,7 +120,7 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
       if (layer) for (const l of s.labels) {
         const div = document.createElement('div');
         div.textContent = l.text;
-        div.className = 'pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded bg-black/75 px-1 text-[11px] leading-4';
+        div.className = 'pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded bg-white/90 px-1 text-[11px] leading-4';
         div.style.color = DIM_COLOR_DARK;
         layer.appendChild(div);
       }
@@ -111,7 +130,9 @@ export function Viewer({ parts, dims }: { parts: { name: string; url: string }[]
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative">
+      <div className="viewer-stage relative">
+        <div className="viewer-caption"><span>MODEL PREVIEW</span><span>Drag to orbit · Scroll to zoom · Right-drag to pan</span></div>
+        {error && <p className="error-message" role="alert">{error}</p>}
         <div ref={ref} className="w-full" />
         <div ref={labelLayer} className="pointer-events-none absolute inset-0 overflow-hidden" />
         <div className="absolute right-2 top-2 flex items-center gap-1 text-xs">

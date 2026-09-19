@@ -34,7 +34,7 @@ export function PhotoCallouts({ src, dimensions, lit, label, onHover, onPick }: 
 
   const shape = (d: RequestedDimension, full: boolean) => {
     const b = px(d), tick = 6;
-    const common = { stroke: '#fff', strokeWidth: full ? 2 : 1, opacity: full ? 1 : 0.28, fill: 'none', className: 'cursor-pointer',
+    const common = { stroke: full ? '#dc514b' : '#ffffff', strokeWidth: full ? 3 : 1, opacity: full ? 1 : 0.2, fill: 'none', className: 'cursor-pointer',
       onMouseEnter: () => onHover(d.id), onMouseLeave: () => onHover(null), onClick: () => onPick(d.id), style: { pointerEvents: 'stroke' as const } };
     if (d.shape === 'circle') return <ellipse key={d.id} cx={b.x + b.w / 2} cy={b.y + b.h / 2} rx={Math.max(b.w / 2, 6)} ry={Math.max(b.h / 2, 6)} {...common} />;
     if (d.shape === 'line') {
@@ -48,7 +48,7 @@ export function PhotoCallouts({ src, dimensions, lit, label, onHover, onPick }: 
         </g>
       );
     }
-    return <rect key={d.id} x={b.x} y={b.y} width={b.w} height={b.h} {...common} fill={full ? 'rgba(255,255,255,0.12)' : 'none'} style={{ pointerEvents: 'all' }} />;
+    return <rect key={d.id} x={b.x} y={b.y} width={b.w} height={b.h} {...common} fill={full ? 'rgba(220,81,75,0.12)' : 'none'} style={{ pointerEvents: 'all' }} />;
   };
 
   // Caption sits above the topmost lit callout.
@@ -61,8 +61,8 @@ export function PhotoCallouts({ src, dimensions, lit, label, onHover, onPick }: 
     : null;
 
   return (
-    <div className="relative">
-      <img ref={ref} src={src} className="block w-full" alt="" />
+    <div className="reference-image relative">
+      <img ref={ref} src={src} className="block w-full" alt="Object reference with measurement annotations" />
       {size.w > 0 && (
         <svg width={size.w} height={size.h} className="absolute inset-0" style={{ pointerEvents: 'none' }}>
           {drawable.filter(d => !litSet.has(d.id)).map(d => shape(d, false))}

@@ -4,18 +4,20 @@ import { api } from '../shared/api';
 import type { Project, Run } from '../shared/types';
 import { Viewer } from './Viewer';
 import { DrawingViews } from './DrawingViews';
+import { Generating } from './Generating';
 import { useElapsed } from './useElapsed';
 
 export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; run: Run; onAcceptNeeds: () => void }) {
   const url = (f: string) => api.fileUrl(project.id, 'runs', String(run.n), f);
   const elapsed = useElapsed(run.status === 'running', run.started);
-  const [views, setViews] = useState(false);
+  const [views, setViews] = useState(true);
   // The readings this run was built from, for the dimension overlay and the drawing sheet.
   const { data: dims } = useQuery({ queryKey: ['dims', project.id, run.n], queryFn: () => api.dims(project.id, run.n), enabled: run.status === 'done', staleTime: Infinity });
   const parts = run.files.map(f => ({ name: f.part, url: url(f.stl) }));
   return (
-    <section className="flex flex-col gap-3 border-t border-neutral-800 pt-3">
+    <section className="run-panel flex flex-col gap-3">
       <div className="flex items-baseline gap-3"><span>Run {run.n + 1}</span><span className="text-neutral-400">{run.status === 'running' ? `running, ${elapsed} s. Usually 30 to 90 s, up to 8 min.` : run.status}</span></div>
+      {run.status === 'running' && <Generating title="Generating model" elapsed={elapsed} detail="Usually 30–90 seconds. Complex parts may take up to 8 minutes." />}
       {run.status === 'needs_dimensions' && run.needs && (
         <div>
           <p>The model needs {run.needs.length} more measurement{run.needs.length > 1 ? 's' : ''}:</p>

@@ -10,7 +10,7 @@ export type Label = { position: THREE.Vector3; text: string; kind: 'dim' | 'circ
 export type Built = { group: THREE.Group; labels: Label[] };
 
 export const PART_GAP = 12;   // mm between parts laid out along X
-export const DIM_COLOR_DARK = '#fbbf24';    // amber on the black viewer
+export const DIM_COLOR_DARK = '#b9403c';    // coral on the light viewer
 export const DIM_COLOR_LIGHT = '#1d4ed8';   // blue on a white drawing sheet
 
 export async function loadParts(parts: { name: string; url: string }[]): Promise<LoadedPart[]> {
@@ -33,7 +33,7 @@ export function layoutOffsets(parts: LoadedPart[]): number[] {
 
 export function partMesh(part: LoadedPart, style: 'viewer' | 'drawing'): THREE.Object3D {
   const material = style === 'viewer'
-    ? new THREE.MeshStandardMaterial({ color: '#d4d4d4', roughness: 0.7 })
+    ? new THREE.MeshStandardMaterial({ color: '#a9bdce', roughness: 0.7 })
     : new THREE.MeshStandardMaterial({ color: '#f1f1f1', roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
   const mesh = new THREE.Mesh(part.geometry, material);
   if (style === 'viewer') return mesh;

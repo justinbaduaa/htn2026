@@ -1,42 +1,53 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../shared/api';
 import { useElapsed } from './useElapsed';
+import { Generating } from './Generating';
 
-/** Home screen. Photos plus a description, then straight into the plan call so the project page opens with measurements requested. */
 export function NewProject() {
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [startedAt, setStartedAt] = useState<number>();
+  const [dragging, setDragging] = useState(false);
+  const [fileError, setFileError] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  const created = useRef<string | null>(null);
+  useEffect(() => {
+    const urls = files.map(f => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [files]);
+  const addFiles = (incoming: File[]) => {
+    const valid = incoming.filter(f => f.type.startsWith('image/'));
+    setFileError(valid.length !== incoming.length ? 'Please attach image files only.' : '');
+    setFiles(current => [...current, ...valid]);
+    created.current = null;
+  };
   const start = useMutation({
     mutationFn: async () => {
       setStartedAt(Date.now());
-      const project = await api.create(files, description);
-      await api.plan(project.id);
-      return project;
+      if (!created.current) created.current = (await api.create(files, description)).id;
+      await api.plan(created.current);
+      return created.current;
     },
-    onSuccess: p => { location.hash = `#p/${p.id}`; },
+    onSuccess: id => { location.hash = `#p/${id}`; },
   });
   const elapsed = useElapsed(start.isPending, startedAt);
   return (
-    <form onSubmit={e => { e.preventDefault(); start.mutate(); }} className="mx-auto flex max-w-xl flex-col gap-5">
-      <label className="flex flex-col gap-2">
-        <span>Photos of the object, one to four. First one straight on from the top. Add a side view for heights and the back if it matters. Callouts land on whichever photo shows the feature.</span>
-        <input type="file" accept="image/*" multiple onChange={e => setFiles([...(e.target.files ?? [])].slice(0, 4))} />
-        {files.length > 0 && (
-          <div className="flex gap-2">{files.map(f => <img key={f.name} src={URL.createObjectURL(f)} className="h-20" alt="" />)}</div>
-        )}
-      </label>
-      <label className="flex flex-col gap-2">
-        <span>What is it, and what do you want printed? Mention screws, ports, and how it should mount.</span>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} className="min-h-32 bg-neutral-900 p-2"
-          placeholder="Hack the North badge, a PCB the size of a Game Boy. I want a case that screws on using the four M4 holes, with the screen and buttons open." />
-      </label>
-      <button disabled={files.length === 0 || start.isPending} className="w-fit bg-white px-3 py-1 text-black disabled:opacity-40">
-        {start.isPending ? `Looking at the photos, ${elapsed} s` : 'Identify part and measurements'}
-      </button>
-      {start.isPending && <p className="text-neutral-400">Usually 30 to 90 seconds. A failure shows here in red.</p>}
-      {start.error && <p className="text-red-400">Failed: {start.error.message}</p>}
-    </form>
+    <section className="new-project">
+      <div className="atmosphere" aria-hidden="true"><i /><i /><i />{Array.from({ length: 18 }, (_, i) => <b key={i} style={{ left: `${(i * 37) % 100}%`, top: `${(i * 23) % 100}%`, animationDelay: `${i * -.8}s` }} />)}</div>
+      <form className={`composer ${dragging ? 'is-dragging' : ''}`} onSubmit={e => { e.preventDefault(); if (files.length && description.trim() && !start.isPending) start.mutate(); }}
+        onDragOver={e => { e.preventDefault(); if (!start.isPending) setDragging(true); }} onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); if (!start.isPending) addFiles([...e.dataTransfer.files]); }}>
+        <h1 className="composer-heading">New project</h1>
+        <textarea aria-label="Describe your project" disabled={start.isPending} value={description} onChange={e => { setDescription(e.target.value); created.current = null; }} placeholder="Describe what you want to print…" required />
+        {files.length > 0 && <div className="photo-attachments">{files.map((f, i) => <div className="attachment" key={`${f.name}-${i}`}><img src={previews[i]} alt={f.name} /><span>{i === 0 ? 'Top view' : `View ${i + 1}`}</span><button type="button" aria-label={`Remove ${f.name}`} disabled={start.isPending} onClick={() => { setFiles(files.filter((_, n) => n !== i)); created.current = null; }}>×</button></div>)}</div>}
+        <div className="composer-footer"><input ref={input} type="file" accept="image/*" multiple className="sr-only" aria-label="Attach object photos" disabled={start.isPending} onChange={e => { addFiles([...(e.target.files ?? [])]); e.target.value = ''; }} /><button type="button" className="attach-button" disabled={start.isPending} onClick={() => input.current?.click()}><span>＋</span> Add photos <small>{files.length}</small></button><button className="primary-button" disabled={!files.length || !description.trim() || start.isPending}>{start.isPending ? 'Analyzing…' : 'Continue'}</button></div>
+        {fileError && <p className="error-message" role="alert">{fileError}</p>}
+        {start.error && <p className="error-message" role="alert">{start.error.message} You can try again.</p>}
+      </form>
+      {start.isPending ? <Generating title="Analyzing photos" elapsed={elapsed} detail="Identifying measurements. Usually 30–90 seconds." /> : <p className="upload-hint">At least one photo required. Include top and side views.</p>}
+    </section>
   );
 }

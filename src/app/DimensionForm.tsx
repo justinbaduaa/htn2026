@@ -55,6 +55,9 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
   const [notes, setNotes] = useState(project.notes);
   const valuesKey = plan.dimensions.map(d => `${d.id}=${project.values[d.id] ?? ''}`).join('|');
   useEffect(() => { setDraft(fromProject()); setNotes(project.notes); }, [project.id, valuesKey]);
+  const [custom, setCustom] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customValue, setCustomValue] = useState('');
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const isOpen = (g: Group) => open[g.key] ?? g.dims[0]!.priority === 'required';
 
@@ -76,7 +79,7 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
   const isActiveGroup = (g: Group) => active?.label === g.label && active.ids.length === g.dims.length;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="dimension-form flex flex-col gap-5">
       {tiers.map(tier => {
         const groups = groupsOf(plan.dimensions, tier.priority);
         if (groups.length === 0) return null;
@@ -84,7 +87,7 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
         const live = all.filter(d => !skipped.has(d.id));
         const done = live.filter(entered).length;
         return (
-          <section key={tier.priority}>
+          <section key={tier.priority} className={`dimension-tier tier-${tier.priority}`}>
             <div className="flex items-baseline gap-3 border-b border-neutral-800 pb-1">
               <h2 className="font-semibold">{tier.title}</h2>
               <span className="text-neutral-400">{done} of {live.length}{all.length > live.length ? `, ${all.length - live.length} skipped` : ''}</span>
@@ -101,12 +104,13 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
               const gLive = g.dims.filter(d => !skipped.has(d.id));
               const target: Target = { ids, label: g.label };
               return (
-                <div key={g.key} className={isActiveGroup(g) ? 'bg-neutral-900' : ''}>
-                  <div className="flex cursor-pointer select-none items-center gap-2 px-1 py-1" onMouseEnter={() => onHover(target)} onMouseLeave={() => onHover(null)}
-                    onClick={() => { setOpen({ ...open, [g.key]: !isOpen(g) }); onFocus(target); }}>
-                    <span className="w-3 text-neutral-500">{isOpen(g) ? '▾' : '▸'}</span>
+                <div key={g.key} className={`dimension-group ${isActiveGroup(g) ? 'is-active' : ''}`}>
+                  <div className="dimension-group-header" onMouseEnter={() => onHover(target)} onMouseLeave={() => onHover(null)}
+                    >
+                    <button type="button" className="group-toggle" aria-expanded={isOpen(g)} onClick={() => { setOpen({ ...open, [g.key]: !isOpen(g) }); onFocus(target); }}>
                     <span className={gSkipped ? 'text-neutral-500 line-through' : ''}>{g.label}</span>
                     <span className="text-xs text-neutral-400">{gSkipped ? 'skipped' : `${gLive.filter(entered).length}/${gLive.length}`}</span>
+                    </button>
                     <button type="button" className="ml-auto text-xs text-neutral-500 hover:text-white" onClick={e => { e.stopPropagation(); setSkip(ids, !gSkipped); }}>
                       {gSkipped ? 'unskip' : 'skip'}
                     </button>
@@ -116,18 +120,18 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
                     const isActive = active?.ids.length === 1 && active.ids[0] === d.id;
                     const one: Target = { ids: [d.id], label: d.name };
                     return (
-                      <div key={d.id} className={`ml-5 px-1 py-0.5 ${isActive ? 'bg-neutral-900' : ''} ${s ? 'opacity-50' : ''}`} onMouseEnter={() => onHover(one)} onMouseLeave={() => onHover(null)}>
+                      <div key={d.id} className={`dimension-reading ml-5 px-1 py-0.5 ${isActive ? 'bg-neutral-900' : ''} ${s ? 'opacity-50' : ''}`} onMouseEnter={() => onHover(one)} onMouseLeave={() => onHover(null)}>
                         <label className="grid grid-cols-[1fr_6rem] items-center gap-2">
                           <span>
                             <span className={s ? 'line-through' : ''}>{d.name}</span>
                             <span className="block text-xs text-neutral-400">{d.why}</span>
                           </span>
-                          <input id={`dim-${d.id}`} type="number" step="0.01" inputMode="decimal" aria-label={d.name} disabled={s}
+                          <span className="measurement-input"><input id={`dim-${d.id}`} type="number" min="0" step="0.01" inputMode="decimal" aria-label={d.name} disabled={s}
                             placeholder={d.priority === 'required' && d.default_mm != null ? `~${d.default_mm}, measure it` : 'mm'}
                             value={draft[d.id] ?? ''} onFocus={e => { onFocus(one); e.target.select(); }} onBlur={commit}
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                             onChange={e => setDraft({ ...draft, [d.id]: e.target.value })}
-                            className="bg-neutral-900 px-2 py-1 text-right disabled:opacity-40" />
+                            className="bg-neutral-900 px-2 py-1 text-right disabled:opacity-40" /><span>mm</span></span>
                         </label>
                         <div className="flex gap-3 text-xs">
                           <button type="button" onClick={() => setSkip([d.id], !s)} className="text-neutral-500 hover:text-white">{s ? 'Unskip' : "Doesn't apply, skip"}</button>
@@ -142,15 +146,12 @@ export function DimensionForm({ project, active, onFocus, onHover, onChange, onA
           </section>
         );
       })}
-      <button type="button" className="w-fit text-neutral-400 hover:text-white" onClick={() => {
-        const name = prompt('Dimension name');
-        const value = Number(prompt('Value in mm'));
-        if (name && value > 0) onChange({ values: project.values, extra: [...project.extra, { id: `user_${project.extra.length}`, name, kind: 'other', hole: null, value_mm: value, estimated: false }], notes });
-      }}>+ add a measurement the model did not ask for</button>
+      <button type="button" className="add-measurement" aria-expanded={custom} onClick={() => setCustom(v => !v)}>＋ Add a measurement</button>
+      {custom && <div className="custom-measurement"><label>Measurement name<input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="e.g. Cable opening" /></label><label>Value (mm)<input type="number" min="0.01" step="0.01" value={customValue} onChange={e => setCustomValue(e.target.value)} /></label><button type="button" disabled={!customName.trim() || !Number.isFinite(Number(customValue)) || Number(customValue) <= 0} onClick={() => { onChange({ values: project.values, extra: [...project.extra, { id: `user_${Date.now()}`, name: customName.trim(), kind: 'other', hole: null, value_mm: Number(customValue), estimated: false }], notes }); setCustom(false); setCustomName(''); setCustomValue(''); }}>Add measurement</button></div>}
       {project.extra.map(x => <div key={x.id} className="px-1 text-neutral-400">{x.name}: {x.value_mm} mm</div>)}
-      <textarea value={notes} placeholder="Notes for the next generation, e.g. holes were 0.5 mm too far apart"
+      <label className="notes-label">Refinement notes<textarea value={notes} placeholder="Notes for the next generation, e.g. holes were 0.5 mm too far apart"
         onChange={e => setNotes(e.target.value)} onBlur={commit}
-        className="min-h-20 bg-neutral-900 p-2" />
+        className="min-h-20 bg-neutral-900 p-2" /></label>
     </div>
   );
 }

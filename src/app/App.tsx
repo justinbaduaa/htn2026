@@ -13,12 +13,12 @@ export function App() {
   const hash = useHash();
   const id = hash.startsWith('#p/') ? hash.slice(3) : null;
   return (
-    <main className="mx-auto max-w-6xl p-6 text-sm">
-      <header className="mb-6 flex items-baseline gap-4">
-        <a href="#" className="text-base font-semibold">Photo to print</a>
-        <a href="#projects" className="text-neutral-400 hover:text-white">Projects</a>
+    <main className="app-shell">
+      <header className="app-header">
+        <a href="#" className="brand">CADEX</a>
+        <nav><a href="#projects" className={hash === "#projects" ? "nav-active" : ""}>Projects</a><a href="#" className="nav-new">＋ New project</a></nav>
       </header>
-      {id ? <ProjectPage id={id} /> : hash === '#projects' ? <ProjectList /> : <NewProject />}
+      {id ? <ProjectPage key={id} id={id} /> : hash === '#projects' ? <ProjectList /> : <NewProject />}
     </main>
   );
 }

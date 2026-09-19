@@ -22,7 +22,7 @@ app.delete('/api/projects', async c => { if (generate.isBusy()) return c.json({ 
 
 app.post('/api/projects', async c => {
   const form = await c.req.formData();
-  const files = form.getAll('photos').filter((f): f is File => f instanceof File).slice(0, 4);
+  const files = form.getAll('photos').filter((f): f is File => f instanceof File);
   if (files.length === 0) return c.json({ error: 'Add at least one photo.' }, 400);
   const photos = await Promise.all(files.map(async f => ({ data: new Uint8Array(await f.arrayBuffer()) })));
   const description = String(form.get('description') ?? '').slice(0, 3000);
