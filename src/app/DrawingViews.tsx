@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { DimsFile } from '../shared/types';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../shared/api';
+import type { CadGeometry } from '../shared/cadGeometry';
 import { fmt } from '../shared/annotations';
 import { renderDrawings, type PartDrawing, type SheetMeta } from './drawings';
 import { loadParts } from './scene';
@@ -8,20 +10,33 @@ import { loadParts } from './scene';
  * Engineering views for one run: per printed part, top, front, right, and isometric renders with
  * dimensions, plus a one-page sheet to send to whoever is checking or machining it.
  */
-export function DrawingViews({ parts, dims, meta }: { parts: { name: string; url: string }[]; dims: DimsFile; meta: SheetMeta }) {
+export function DrawingViews({ parts, geometry, meta }: { parts: { name: string; url: string }[]; geometry?: CadGeometry | null; meta: SheetMeta }) {
+  const { data: fetchedGeometry, error: geometryError, refetch } = useQuery({
+    queryKey: ['cad-geometry', meta.projectId, meta.run],
+    queryFn: () => api.geometry(meta.projectId, meta.run),
+    enabled: !geometry, staleTime: Infinity,
+  });
+  const measuredGeometry = geometry ?? fetchedGeometry;
+  const [attempt, setAttempt] = useState(0);
   const [drawings, setDrawings] = useState<PartDrawing[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const key = parts.map(p => p.url).join('|');
   useEffect(() => {
     let cancelled = false;
     setDrawings(null); setError(null);
-    loadParts(parts).then(loaded => renderDrawings(loaded, dims, meta))
+    if (!measuredGeometry) return;
+    loadParts(parts).then(loaded => {
+      if (cancelled) { loaded.forEach(part => part.geometry.dispose()); return null; }
+      return renderDrawings(loaded, measuredGeometry, meta);
+    })
       .then(d => { if (!cancelled) setDrawings(d); })
       .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); });
     return () => { cancelled = true; };
-  }, [key, dims]);
+  }, [key, measuredGeometry, meta.projectId, meta.run, meta.title, attempt]);
 
-  if (error) return <p className="text-red-400">Could not render the views: {error}</p>;
+  if (geometryError && !measuredGeometry) return <div role="alert"><p className="text-red-400">Could not load CAD measurements: {geometryError.message}</p><button onClick={() => void refetch()}>Retry</button></div>;
+  if (!measuredGeometry) return <p role="status" className="text-neutral-400">Loading CAD measurements…</p>;
+  if (error) return <div role="alert"><p className="text-red-400">Could not render the views: {error}</p><button onClick={() => setAttempt(v => v + 1)}>Retry views</button></div>;
   if (!drawings) return <p className="text-neutral-400">Rendering views</p>;
   const file = (part: string, view: string) => `${meta.projectId}-run${meta.run + 1}-${part}-${view}.png`;
   return (
@@ -44,9 +59,8 @@ export function DrawingViews({ parts, dims, meta }: { parts: { name: string; url
               </figure>
             ))}
           </div>
-          {d.listed.length > 0 && (
-            <p className="text-xs text-neutral-400">In the sheet's table only: {d.listed.map(l => `${l.name} ${fmt(l.value_mm)}`).join('; ')}.</p>
-          )}
+          <details className="cad-feature-schedule"><summary>CAD measurement schedule</summary><p>All values in mm. XYZ locations are measured from this part’s minimum XYZ corner. Levels are face positions, not inferred pocket depths.</p><ul>{d.features.map((row, i) => <li key={i}>{row}</li>)}</ul></details>
+          {d.notes.map(note => <p key={note} className="text-xs text-neutral-400">{note}</p>)}
         </section>
       ))}
     </div>

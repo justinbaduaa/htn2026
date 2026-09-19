@@ -1,3 +1,4 @@
+import { cadGeometrySchema } from './cadGeometry';
 import { dimsFileSchema, projectSchema, runSchema, type DimsFile, type Project, type Run } from './types';
 
 async function json<T>(input: string, init?: RequestInit): Promise<T> {
@@ -8,6 +9,7 @@ async function json<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  geometry: (id: string, n: number) => json<unknown>(`/api/projects/${id}/runs/${n}/geometry`).then(data => cadGeometrySchema.parse(data)),
   list: () => json<Project[]>('/api/projects').then(p => p.map(x => projectSchema.parse(x))),
   get: (id: string) => json<Project>(`/api/projects/${id}`).then(p => projectSchema.parse(p)),
   create: (photos: File[], description: string) => { const f = new FormData(); photos.forEach(p => f.append('photos', p)); f.append('description', description); return json<Project>('/api/projects', { method: 'POST', body: f }); },

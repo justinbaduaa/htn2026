@@ -247,3 +247,25 @@ a[download]{color:#496d91}
 .group-toggle[aria-expanded="true"]{background:#edf3f8;border-color:#c6d4e2}
 
 .reference-thumbnails{flex-wrap:wrap}
+
+.cad-viewer{border:1px solid #d7e0e8;border-radius:10px;overflow:hidden;background:#e7edf2}
+.cad-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f7f9fb;border-bottom:1px solid #dce4eb}
+.cad-toolbar-group{display:flex;gap:5px;flex-wrap:wrap}
+.cad-toolbar button{font-size:11px;padding:5px 10px;box-shadow:none}
+.cad-toolbar button[aria-pressed="true"]{background:#dce7f0;border-color:#b6cadc;color:#2e5275}
+.cad-dimension-toolbar{justify-content:flex-start;gap:6px}
+.cad-dimension-toolbar>span{font-size:11px;color:#718094;margin-right:5px}
+.cad-dimension-toolbar button[aria-pressed="true"]{background:#f7e5e3;border-color:#d6a5a0;color:#963e38}
+.cad-canvas{position:relative;height:520px;isolation:isolate}
+.cad-render-surface{width:100%;height:100%;cursor:grab}
+.cad-render-surface canvas{display:block;touch-action:none}
+.cad-render-surface.is-interacting{cursor:grabbing}
+.mode-pan .cad-render-surface{cursor:move}
+.cad-label-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.model-dimension-label{position:absolute;top:0;left:0;white-space:nowrap;font:500 11px/16px ui-monospace,SFMono-Regular,monospace;color:#a83d39;text-shadow:0 1px 2px #e7edf2,0 -1px 2px #e7edf2,1px 0 2px #e7edf2,-1px 0 2px #e7edf2;pointer-events:none}
+.cad-navigation-hint{padding:9px 12px;color:#677b8f;font-size:10px;border-top:1px solid #d7e0e8;background:#f7f9fb}
+.cad-feature-schedule{border:1px solid #e1e7ee;border-radius:8px;padding:10px 12px;font-size:11px}
+.cad-feature-schedule summary{cursor:pointer;font-size:12px;font-weight:500}
+.cad-feature-schedule p{color:#718094;margin:8px 0}
+.cad-feature-schedule ul{list-style:none;padding:0;max-height:320px;overflow:auto;font-family:ui-monospace,monospace}
+.cad-feature-schedule li{padding:5px 0;border-top:1px solid #edf0f4;overflow-wrap:anywhere}

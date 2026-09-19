@@ -6,6 +6,7 @@ import { model } from './model';
 import { askPrompt, planPrompt } from './prompts';
 import * as store from './store';
 import * as generate from './generate';
+import { measureRun } from './geometry';
 import { enteredDimensionSchema, normalizePlan, requestedDimensionSchema } from '../src/shared/types';
 import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -122,6 +123,20 @@ app.post('/api/projects/:id/generate', async c => {
   if (generate.isBusy()) return c.json({ error: 'A generation is already running.' }, 409);
   try { return c.json(await generate.start(c.req.param('id'))); }
   catch (error) { return c.json({ error: error instanceof Error ? error.message : 'Could not start.' }, 400); }
+});
+
+app.get('/api/projects/:id/runs/:n/geometry', async c => {
+  const id = c.req.param('id');
+  if (!/^[a-zA-Z0-9_-]+$/.test(id)) return c.json({ error: 'Invalid project.' }, 400);
+  try {
+    const project = await store.load(id);
+    const run = project.runs.find(r => r.n === Number(c.req.param('n')));
+    if (!run || run.status !== 'done') return c.json({ error: 'No completed model.' }, 404);
+    return c.json(await measureRun(store.runDir(id, run.n), run.files));
+  } catch (error) {
+    console.error('CAD measurement failed', error);
+    return c.json({ error: 'Could not measure the STEP model. Source-object measurements are not used as a fallback.' }, 500);
+  }
 });
 
 app.use('/api/files/*', serveStatic({ root: './projects', rewriteRequestPath: p => p.replace(/^\/api\/files/, '') }));
