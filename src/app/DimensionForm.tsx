@@ -42,7 +42,7 @@ export function DimensionForm({ project, active, onFocus, onChange }: Props) {
             <span className="block text-xs text-neutral-400">{d.why}</span>
           </span>
           <input id={`dim-${d.id}`} type="number" step="0.01" inputMode="decimal" aria-label={d.name} placeholder="mm"
-            value={draft[d.id] ?? ''} onFocus={() => onFocus(d.id)} onBlur={commit}
+            value={draft[d.id] ?? ''} onFocus={e => { onFocus(d.id); e.target.select(); }} onBlur={commit}
             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             onChange={e => setDraft({ ...draft, [d.id]: e.target.value })}
             className="bg-neutral-900 px-2 py-1 text-right" />
