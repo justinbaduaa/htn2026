@@ -2,16 +2,120 @@
   "title": "Test plate for a 60x40 board",
   "summary": "A flat plate under a small PCB with one M4 mounting hole near the corner. Canned response for UI work; not model output.",
   "parts": [
-    { "name": "plate", "printed": true, "purpose": "Sits under the board, screwed through the board's hole." },
-    { "name": "M4 screw", "printed": false, "purpose": "Use the screw you have." }
+    {
+      "name": "plate",
+      "printed": true,
+      "purpose": "Sits under the board, screwed through the board's hole."
+    },
+    {
+      "name": "M4 screw",
+      "printed": false,
+      "purpose": "Use the screw you have."
+    }
   ],
   "dimensions": [
-    { "id": "w", "name": "Board width", "why": "Plate must be at least this wide.", "critical": true, "kind": "extent_x", "hole": null, "photo": 0, "box": { "x": 0.1, "y": 0.9, "w": 0.8, "h": 0.06 }, "default_mm": null },
-    { "id": "h", "name": "Board height", "why": "Plate must be at least this tall.", "critical": true, "kind": "extent_y", "hole": null, "photo": 0, "box": { "x": 0.92, "y": 0.1, "w": 0.06, "h": 0.8 }, "default_mm": null },
-    { "id": "h1x", "name": "Hole 1 X from left edge", "why": "Screw hole center, measured from the board's left edge.", "critical": true, "kind": "hole_x", "hole": "h1", "photo": 0, "box": { "x": 0.1, "y": 0.72, "w": 0.12, "h": 0.05 }, "default_mm": null },
-    { "id": "h1y", "name": "Hole 1 Y from bottom edge", "why": "Screw hole center, measured from the board's bottom edge.", "critical": true, "kind": "hole_y", "hole": "h1", "photo": 0, "box": { "x": 0.14, "y": 0.72, "w": 0.05, "h": 0.16 }, "default_mm": null },
-    { "id": "h1d", "name": "Hole 1 diameter", "why": "Inner diameter of the mounting hole.", "critical": true, "kind": "hole_diameter", "hole": "h1", "photo": 0, "box": { "x": 0.12, "y": 0.68, "w": 0.08, "h": 0.1 }, "default_mm": null },
-    { "id": "t", "name": "Plate thickness", "why": "Cosmetic. 3 mm prints in about 40 minutes.", "critical": false, "kind": "other", "hole": null, "photo": 0, "box": { "x": 0.4, "y": 0.4, "w": 0.2, "h": 0.1 }, "default_mm": 3 }
+    {
+      "id": "w",
+      "name": "Board width",
+      "why": "Plate must be at least this wide.",
+      "critical": true,
+      "kind": "extent_x",
+      "hole": null,
+      "photo": 0,
+      "box": {
+        "x": 0.1,
+        "y": 0.5,
+        "w": 0.8,
+        "h": 0
+      },
+      "default_mm": null,
+      "shape": "line"
+    },
+    {
+      "id": "h",
+      "name": "Board height",
+      "why": "Plate must be at least this tall.",
+      "critical": true,
+      "kind": "extent_y",
+      "hole": null,
+      "photo": 0,
+      "box": {
+        "x": 0.5,
+        "y": 0.1,
+        "w": 0,
+        "h": 0.8
+      },
+      "default_mm": null,
+      "shape": "line"
+    },
+    {
+      "id": "h1x",
+      "name": "Hole 1 X from left edge",
+      "why": "Screw hole center, measured from the board's left edge.",
+      "critical": true,
+      "kind": "hole_x",
+      "hole": "h1",
+      "photo": 0,
+      "box": {
+        "x": 0.1,
+        "y": 0.72,
+        "w": 0.12,
+        "h": 0.05
+      },
+      "default_mm": null,
+      "shape": "line"
+    },
+    {
+      "id": "h1y",
+      "name": "Hole 1 Y from bottom edge",
+      "why": "Screw hole center, measured from the board's bottom edge.",
+      "critical": true,
+      "kind": "hole_y",
+      "hole": "h1",
+      "photo": 0,
+      "box": {
+        "x": 0.14,
+        "y": 0.72,
+        "w": 0.05,
+        "h": 0.16
+      },
+      "default_mm": null,
+      "shape": "line"
+    },
+    {
+      "id": "h1d",
+      "name": "Hole 1 diameter",
+      "why": "Inner diameter of the mounting hole.",
+      "critical": true,
+      "kind": "hole_diameter",
+      "hole": "h1",
+      "photo": 0,
+      "box": {
+        "x": 0.185,
+        "y": 0.66,
+        "w": 0.07,
+        "h": 0.1
+      },
+      "default_mm": null,
+      "shape": "circle"
+    },
+    {
+      "id": "t",
+      "name": "Plate thickness",
+      "why": "Cosmetic. 3 mm prints in about 40 minutes.",
+      "critical": false,
+      "kind": "other",
+      "hole": null,
+      "photo": 0,
+      "box": {
+        "x": 0.4,
+        "y": 0.4,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "default_mm": 3,
+      "shape": "none"
+    }
   ],
   "question": ""
 }

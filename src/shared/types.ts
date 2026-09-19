@@ -11,6 +11,8 @@ export const requestedDimensionSchema = z.strictObject({
   kind: dimensionKind,
   hole: z.string().max(20).nullable(),   // groups hole_x, hole_y, hole_diameter for one hole
   photo: z.number().int().min(0),
+  // How to draw the callout. line: from (x,y) to (x+w,y+h). circle: inscribed in the box. none: not visible in the photo.
+  shape: z.enum(['box', 'line', 'circle', 'none']).default('box'),
   box: z.strictObject({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), w: z.number().min(0).max(1), h: z.number().min(0).max(1) }),
   default_mm: z.number().nullable(),
 });

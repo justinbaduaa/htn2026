@@ -19,7 +19,6 @@ export function ProjectPage({ id }: { id: string }) {
   const accept = useMutation({ mutationFn: (n: number) => api.acceptNeeds(id, n), onSuccess: invalidate });
   if (!project) return null;
 
-  const focusDim = (dimId: string) => { setActive(dimId); document.getElementById(`dim-${dimId}`)?.focus(); };
   const missing = missingCritical(project);
   const running = project.runs.some(r => r.status === 'running');
   const activeDim = project.plan?.dimensions.find(d => d.id === active);
@@ -31,8 +30,7 @@ export function ProjectPage({ id }: { id: string }) {
         <h1 className="text-lg font-semibold">{project.title}</h1>
         {project.description && <p className="text-neutral-400">{project.description}</p>}
         {project.plan && <p>{project.plan.summary}</p>}
-        <PhotoCallouts src={api.fileUrl(id, 'photos', project.photos[photoIndex]!)} active={active} onPick={focusDim}
-          dimensions={project.plan?.dimensions.filter(d => d.photo === photoIndex) ?? []} />
+        <PhotoCallouts src={api.fileUrl(id, 'photos', project.photos[photoIndex]!)} dimension={activeDim ?? null} />
         <div className="flex gap-2">
           {project.photos.map((p, i) => <img key={p} src={api.fileUrl(id, 'photos', p)} onClick={() => setActive(project.plan?.dimensions.find(d => d.photo === i)?.id ?? null)}
             className={`h-16 cursor-pointer ${i === photoIndex ? 'opacity-100' : 'opacity-50'}`} alt="" />)}
