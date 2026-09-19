@@ -7,6 +7,7 @@ type Props = {
   onFocus: (id: string) => void;
   onChange: (patch: Pick<Project, 'values' | 'extra' | 'notes'>) => void;
   onAsk: (dimensionId: string, question: string) => Promise<unknown>;
+  onSkip: (dimensionId: string) => void;
 };
 
 export function missingCritical(project: Project): RequestedDimension[] {
@@ -17,7 +18,7 @@ export function missingCritical(project: Project): RequestedDimension[] {
  * Inputs are drafts in local state and save on blur or Enter. Saving on every keystroke
  * let the server refetch overwrite the field mid-typing and drop digits.
  */
-export function DimensionForm({ project, active, onFocus, onChange, onAsk }: Props) {
+export function DimensionForm({ project, active, onFocus, onChange, onAsk, onSkip }: Props) {
   const plan = project.plan!;
   const fromProject = () => Object.fromEntries(plan.dimensions.map(d => [d.id, project.values[d.id]?.toString() ?? d.default_mm?.toString() ?? '']));
   const [draft, setDraft] = useState<Record<string, string>>(fromProject);
@@ -28,7 +29,7 @@ export function DimensionForm({ project, active, onFocus, onChange, onAsk }: Pro
     const values: Record<string, number> = {};
     for (const [id, raw] of Object.entries(draft)) {
       const v = Number(raw);
-      if (raw !== '' && !Number.isNaN(v) && v > 0) values[id] = v;
+      if (raw !== '' && !Number.isNaN(v) && v >= 0) values[id] = v;
     }
     const same = JSON.stringify(values) === JSON.stringify(project.values) && notes === project.notes;
     if (!same) onChange({ values, extra: project.extra, notes });
@@ -49,7 +50,7 @@ export function DimensionForm({ project, active, onFocus, onChange, onAsk }: Pro
               onChange={e => setDraft({ ...draft, [d.id]: e.target.value })}
               className="bg-neutral-900 px-2 py-1 text-right" />
           </label>
-          <Clarify dimension={d} thread={project.clarifications[d.id] ?? []} onAsk={q => onAsk(d.id, q)} onOpen={() => onFocus(d.id)} />
+          <Clarify dimension={d} thread={project.clarifications[d.id] ?? []} onAsk={q => onAsk(d.id, q)} onOpen={() => onFocus(d.id)} onSkip={() => onSkip(d.id)} />
         </div>
       ))}
       <button type="button" className="w-fit text-neutral-400 hover:text-white" onClick={() => {
@@ -66,7 +67,7 @@ export function DimensionForm({ project, active, onFocus, onChange, onAsk }: Pro
 }
 
 /** Q&A thread under one dimension. "Unclear?" opens a one-line question box; answers stay under the field. */
-function Clarify({ dimension, thread, onAsk, onOpen }: { dimension: RequestedDimension; thread: { question: string; answer: string }[]; onAsk: (q: string) => Promise<unknown>; onOpen: () => void }) {
+function Clarify({ dimension, thread, onAsk, onOpen, onSkip }: { dimension: RequestedDimension; thread: { question: string; answer: string }[]; onAsk: (q: string) => Promise<unknown>; onOpen: () => void; onSkip: () => void }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [pending, setPending] = useState(false);
@@ -93,7 +94,10 @@ function Clarify({ dimension, thread, onAsk, onOpen }: { dimension: RequestedDim
           <button type="button" onClick={() => void send()} disabled={pending || !question.trim()} className="bg-white px-2 text-black disabled:opacity-40">{pending ? 'Asking' : 'Ask'}</button>
         </div>
       ) : (
-        <button type="button" onClick={() => { setOpen(true); onOpen(); }} className="text-neutral-500 hover:text-white">Unclear? Ask about this measurement</button>
+        <span className="flex gap-3">
+          <button type="button" onClick={() => { setOpen(true); onOpen(); }} className="text-neutral-500 hover:text-white">Unclear? Ask about this measurement</button>
+          {dimension.critical && <button type="button" onClick={onSkip} className="text-neutral-500 hover:text-white">Doesn't apply, skip</button>}
+        </span>
       )}
       {error && <div className="text-red-400">{error}</div>}
     </div>

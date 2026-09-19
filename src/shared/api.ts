@@ -16,6 +16,7 @@ export const api = {
     json<Project>(`/api/projects/${id}/dimensions`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   ask: (id: string, dimensionId: string, question: string) =>
     json<Project>(`/api/projects/${id}/ask`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dimensionId, question }) }),
+  skip: (id: string, dimensionId: string) => json<Project>(`/api/projects/${id}/skip/${dimensionId}`, { method: 'POST' }),
   acceptNeeds: (id: string, n: number) => json<Project>(`/api/projects/${id}/accept-needs/${n}`, { method: 'POST' }),
   generate: (id: string) => json<Run>(`/api/projects/${id}/generate`, { method: 'POST' }).then(r => runSchema.parse(r)),
   fileUrl: (id: string, ...parts: string[]) => `/api/files/${id}/${parts.join('/')}`,

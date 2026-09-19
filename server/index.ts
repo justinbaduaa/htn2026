@@ -89,6 +89,17 @@ app.post('/api/projects/:id/ask', async c => {
   }
 });
 
+// The user says a requested measurement does not apply. It stops blocking Generate; the model is told it was skipped.
+app.post('/api/projects/:id/skip/:dim', async c => {
+  const project = await store.load(c.req.param('id'));
+  const d = project.plan?.dimensions.find(x => x.id === c.req.param('dim'));
+  if (!d) return c.json({ error: 'Unknown dimension.' }, 400);
+  d.critical = false;
+  d.why = `${d.why} (User skipped this: it does not apply to their object.)`.slice(0, 400);
+  await store.save(project);
+  return c.json(project);
+});
+
 app.post('/api/projects/:id/generate', async c => {
   if (generate.isBusy()) return c.json({ error: 'A generation is already running.' }, 409);
   try { return c.json(await generate.start(c.req.param('id'))); }

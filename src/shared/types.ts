@@ -33,7 +33,7 @@ export const enteredDimensionSchema = z.strictObject({
   name: z.string(),
   kind: dimensionKind,
   hole: z.string().nullable().default(null),
-  value_mm: z.number().positive(),
+  value_mm: z.number().nonnegative(),   // 0 is a real answer: "nothing sticks out"
 });
 export const constantsSchema = z.strictObject({ fit_clearance_mm: z.number(), hole_compensation_mm: z.number(), wall_mm: z.number() });
 export const dimsFileSchema = z.strictObject({
