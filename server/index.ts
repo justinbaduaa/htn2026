@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { z } from 'zod';
 import { model } from './model';
-import { planPrompt } from './prompts';
+import { askPrompt, planPrompt } from './prompts';
 import * as store from './store';
 import * as generate from './generate';
 import { enteredDimensionSchema, requestedDimensionSchema } from '../src/shared/types';
@@ -62,6 +62,31 @@ app.post('/api/projects/:id/accept-needs/:n', async c => {
   run.needs = null;
   await store.save(project);
   return c.json(project);
+});
+
+// A question about one requested dimension. Stores the Q&A and applies the model's clearer rewrite of the dimension if it gives one.
+const askBody = z.strictObject({ dimensionId: z.string(), question: z.string().min(1).max(600) });
+app.post('/api/projects/:id/ask', async c => {
+  const body = askBody.parse(await c.req.json());
+  const project = await store.load(c.req.param('id'));
+  const index = project.plan?.dimensions.findIndex(d => d.id === body.dimensionId) ?? -1;
+  const dimension = project.plan?.dimensions[index];
+  if (!project.plan || !dimension) return c.json({ error: 'Unknown dimension.' }, 400);
+  const paths = project.photos.map(p => join(store.dir(project.id), 'photos', p));
+  const prior = project.clarifications[dimension.id] ?? [];
+  try {
+    const result = await model.ask(paths, askPrompt(project.description, project.plan, dimension, prior, body.question));
+    project.clarifications[dimension.id] = [...prior, { question: body.question, answer: result.answer }];
+    if (result.revised && result.revised.id === dimension.id) {
+      project.plan.dimensions[index] = { ...result.revised, kind: dimension.kind, hole: dimension.hole, critical: dimension.critical,
+        photo: Math.min(Math.max(result.revised.photo, 0), project.photos.length - 1) };
+    }
+    await store.save(project);
+    return c.json(project);
+  } catch (error) {
+    console.error('ask failed', error);
+    return c.json({ error: 'The model could not answer. Try again.' }, 502);
+  }
 });
 
 app.post('/api/projects/:id/generate', async c => {

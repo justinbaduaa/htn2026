@@ -42,7 +42,9 @@ export async function start(id: string): Promise<Run> {
 
 async function execute(id: string, n: number, dirPath: string, dims: DimsFile, previous: string | null) {
   try {
-    await model.generate(dirPath, generatePrompt(dims, previous), new AbortController().signal);
+    const project = await store.load(id);
+    const photos = project.photos.map(p => join(store.dir(id), 'photos', p));
+    await model.generate(dirPath, generatePrompt(dims, previous), new AbortController().signal, photos);
     await finalize(id, n, dirPath, 'The model finished without running the checker.');
   } catch (error) {
     await patch(id, n, { status: 'failed', error: error instanceof Error ? error.message : String(error) });

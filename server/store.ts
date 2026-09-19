@@ -31,7 +31,7 @@ export async function create(photos: { data: Uint8Array }[], description: string
     await writeFile(join(dir(id), 'photos', name), p.data);
     names.push(name);
   }
-  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, description, plan: null, values: {}, extra: [], notes: '', runs: [] };
+  const project: Project = { id, title: 'Untitled', created: new Date().toISOString(), photos: names, description, plan: null, values: {}, extra: [], notes: '', clarifications: {}, runs: [] };
   await save(project);
   return project;
 }

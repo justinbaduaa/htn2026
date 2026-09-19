@@ -21,7 +21,7 @@ export const planSchema = z.strictObject({
   title: z.string().max(100),
   summary: z.string().max(800),
   parts: z.array(z.strictObject({ name: z.string().max(60), printed: z.boolean(), purpose: z.string().max(200) })).max(8),
-  dimensions: z.array(requestedDimensionSchema).max(20),
+  dimensions: z.array(requestedDimensionSchema).max(40),   // the prompt asks for at most 20; accepted mid-run requests can push past that
   question: z.string().max(400),   // non-empty only when photos are unusable
 });
 export type Plan = z.infer<typeof planSchema>;
@@ -56,6 +56,14 @@ export type CheckResult = z.infer<typeof checkResultSchema>;
 // Written by the model when it needs a measurement it does not have.
 export const needsFileSchema = z.strictObject({ dimensions: z.array(requestedDimensionSchema).min(1).max(20) });
 
+// A user question about one requested dimension, and the model's answer. The model may also rewrite the dimension to be clearer.
+export const clarificationSchema = z.strictObject({ question: z.string().max(600), answer: z.string().max(1200) });
+export const askResponseSchema = z.strictObject({
+  answer: z.string().max(1200),
+  revised: requestedDimensionSchema.nullable(),   // same id, clearer name, why, or callout; null if no change needed
+});
+export type AskResponse = z.infer<typeof askResponseSchema>;
+
 export const runSchema = z.strictObject({
   n: z.number().int(),
   started: z.string(),
@@ -77,6 +85,7 @@ export const projectSchema = z.strictObject({
   values: z.record(z.string(), z.number()),          // dimension id -> mm
   extra: z.array(enteredDimensionSchema),            // user-added dimensions
   notes: z.string(),
+  clarifications: z.record(z.string(), z.array(clarificationSchema)).default({}),   // dimension id -> Q&A thread
   runs: z.array(runSchema),
 });
 export type Project = z.infer<typeof projectSchema>;

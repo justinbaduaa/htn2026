@@ -4,7 +4,7 @@ import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { z } from 'zod';
-import { planSchema, type Plan } from '../src/shared/types';
+import { askResponseSchema, planSchema, type AskResponse, type Plan } from '../src/shared/types';
 
 const MODEL = process.env.CODEX_MODEL ?? 'gpt-6-astra';
 const VENV_BIN = join(process.cwd(), '.venv', 'bin');
@@ -12,8 +12,10 @@ const VENV_BIN = join(process.cwd(), '.venv', 'bin');
 export interface ModelAdapter {
   /** Photos in, plan out. Read-only, structured. */
   plan(photoPaths: string[], prompt: string): Promise<Plan>;
-  /** Runs inside runDir with write access; returns when the model stops. Caller inspects the folder. */
-  generate(runDir: string, prompt: string, signal: AbortSignal): Promise<void>;
+  /** Answers a question about one requested dimension, with the photos in view. */
+  ask(photoPaths: string[], prompt: string): Promise<AskResponse>;
+  /** Runs inside runDir with write access; returns when the model stops. Caller inspects the folder. Photos let it place callouts if it asks for more. */
+  generate(runDir: string, prompt: string, signal: AbortSignal, photoPaths: string[]): Promise<void>;
 }
 
 const baseFlags = ['--ask-for-approval', 'never', 'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
@@ -39,23 +41,28 @@ function runCodex(args: string[], opts: { cwd: string; eventsPath: string; timeo
   });
 }
 
+/** One read-only structured call with photos attached. No shell, no files. */
+async function structured<T>(photoPaths: string[], prompt: string, schema: z.ZodType<T>): Promise<T> {
+  const dir = await mkdtemp(join(tmpdir(), 'ask-'));
+  try {
+    const { $schema, ...json } = z.toJSONSchema(schema);
+    const schemaPath = join(dir, 'schema.json'), out = join(dir, 'out.json');
+    await writeFile(schemaPath, JSON.stringify(json));
+    const images = photoPaths.flatMap(p => ['--image', p]);
+    await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', 'model_reasoning_effort="medium"',
+      '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
+      { cwd: dir, eventsPath: join(dir, 'events.jsonl'), timeoutMs: 240_000 });
+    return schema.parse(JSON.parse(await readFile(out, 'utf8')));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}
+
 export const codex: ModelAdapter = {
-  async plan(photoPaths, prompt) {
-    const dir = await mkdtemp(join(tmpdir(), 'plan-'));
-    try {
-      const { $schema, ...schema } = z.toJSONSchema(planSchema);
-      const schemaPath = join(dir, 'schema.json'), out = join(dir, 'out.json');
-      await writeFile(schemaPath, JSON.stringify(schema));
-      const images = photoPaths.flatMap(p => ['--image', p]);
-      await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', 'model_reasoning_effort="medium"',
-        '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
-        { cwd: dir, eventsPath: join(dir, 'events.jsonl'), timeoutMs: 240_000 });
-      return planSchema.parse(JSON.parse(await readFile(out, 'utf8')));
-    } finally { await rm(dir, { recursive: true, force: true }); }
-  },
-  async generate(runDir, prompt, signal) {
+  plan: (photoPaths, prompt) => structured(photoPaths, prompt, planSchema),
+  ask: (photoPaths, prompt) => structured(photoPaths, prompt, askResponseSchema),
+  async generate(runDir, prompt, signal, photoPaths) {
+    const images = photoPaths.flatMap(p => ['--image', p]);
     await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="high"', '--cd', runDir,
-      '--output-last-message', join(runDir, 'last.md'), prompt],
+      '--output-last-message', join(runDir, 'last.md'), prompt, ...images],
       { cwd: runDir, eventsPath: join(runDir, 'events.jsonl'), timeoutMs: 480_000, signal, env: { ...process.env, PATH: `${VENV_BIN}:${process.env.PATH}` } });
   },
 };
@@ -63,6 +70,7 @@ export const codex: ModelAdapter = {
 /** Canned outputs from mock/ for UI work and as a demo fallback. MODEL=mock in .env.local. */
 export const mock: ModelAdapter = {
   async plan() { return planSchema.parse(JSON.parse(await readFile('mock/plan.json', 'utf8'))); },
+  async ask() { return { answer: 'Canned answer: measure between the outer edges with the caliper jaws closed on the board.', revised: null }; },
   async generate(runDir) { await cp('mock/run', runDir, { recursive: true }); },
 };
 

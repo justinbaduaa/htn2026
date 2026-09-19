@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import type { DimsFile } from '../src/shared/types';
+import type { DimsFile, Plan, RequestedDimension } from '../src/shared/types';
 
 // App-owned print constants. The model is told these, it never chooses them.
 export const constants = { fit_clearance_mm: 0.3, hole_compensation_mm: 0.2, wall_mm: 2.4 };
@@ -18,6 +18,22 @@ Return JSON matching the schema. Rules:
 The user's own description of the object and what they want printed. It overrides anything you infer from the photos:
 ${description || '(none given)'}`;
 
+/** The user did not understand one requested dimension. Explain it in plain words and, if the wording or callout was the problem, rewrite the dimension. */
+export function askPrompt(description: string, plan: Plan, dimension: RequestedDimension, prior: { question: string; answer: string }[], question: string) {
+  return `A user is measuring a real object with calipers so a part can be 3D printed to fit it. The photos are attached. They asked for clarification about ONE requested measurement.
+
+Object and goal, in the user's words: ${description || '(none given)'}
+Part plan: ${plan.title}. ${plan.summary}
+All requested measurements, for context: ${plan.dimensions.map(d => `${d.id}: ${d.name}`).join('; ')}
+
+The measurement in question:
+${JSON.stringify(dimension, null, 2)}
+${prior.length ? `\nEarlier questions about it:\n${prior.map(p => `Q: ${p.question}\nA: ${p.answer}`).join('\n')}\n` : ''}
+The user's question: ${question}
+
+Answer in plain words, at most a few sentences: what exactly to measure, where to put the caliper jaws, and what to do if it does not apply to their object. If the name, why, or callout was unclear or wrong, return a revised dimension with the same id, kind, and hole, with clearer name and why and a callout that actually lands on the right place in the photo (shape line from x,y to x+w,y+h for lengths, circle tight around a hole, none if not visible). Otherwise revised is null.`;
+}
+
 export function generatePrompt(dims: DimsFile, previous: string | null) {
   const dir = join(process.cwd(), 'cad', 'examples');
   const examples = readdirSync(dir).filter(f => f.endsWith('.py')).sort()
@@ -32,7 +48,7 @@ Contract for part.py:
 - One solid per part. No threads. Fillets only on outer vertical edges and only if the wall allows the radius.
 - Do not write any other files. Do not read anything outside this folder. Do not use network.
 
-If you need a measurement that dims.json does not have and cannot default safely, write needs.json as {"dimensions":[{"id","name","why","critical":true,"kind","hole","photo":0,"box":{"x","y","w","h"},"default_mm":null}]} and stop without writing part.py.
+If you need a measurement that dims.json does not have and cannot default safely, write needs.json as {"dimensions":[{"id","name","why","critical":true,"kind","hole","photo","shape","box":{"x","y","w","h"},"default_mm":null}]} and stop without writing part.py. The user's photos are attached so you can place each callout: photo is the 0-based photo index; shape is "line" (from x,y to x+w,y+h, where the caliper jaws go), "circle" (box tight around a hole), "box" (a region), or "none" (not visible in any photo); box coordinates are normalized 0..1 with origin top-left. Give each requested dimension its own callout, never the same box twice. Ask for as few as possible and never for anything you can default.
 
 Common failures to avoid: a workplane on a "<Z" face mirrors X, so cut holes with an XY cylinder in global coordinates instead; fillet radius larger than the wall; calling methods that do not exist (there is no .cone() or .array()); filleting before a solid exists; holes at the wrong coordinates because a box was centered; parts that touch at an edge instead of overlapping.
 

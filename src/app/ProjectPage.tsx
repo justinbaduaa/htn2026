@@ -17,6 +17,7 @@ export function ProjectPage({ id }: { id: string }) {
   const save = useMutation({ mutationFn: (body: Parameters<typeof api.saveDimensions>[1]) => api.saveDimensions(id, body), onSuccess: invalidate });
   const generate = useMutation({ mutationFn: () => api.generate(id), onSuccess: invalidate });
   const accept = useMutation({ mutationFn: (n: number) => api.acceptNeeds(id, n), onSuccess: invalidate });
+  const ask = useMutation({ mutationFn: (v: { dimensionId: string; question: string }) => api.ask(id, v.dimensionId, v.question), onSuccess: invalidate });
   if (!project) return null;
 
   const missing = missingCritical(project);
@@ -45,7 +46,8 @@ export function ProjectPage({ id }: { id: string }) {
       <div className="flex flex-col gap-4">
         {project.plan && (
           <>
-            <DimensionForm project={project} active={active} onFocus={setActive} onChange={body => save.mutate(body)} />
+            <DimensionForm project={project} active={active} onFocus={setActive} onChange={body => save.mutate(body)}
+              onAsk={(dimensionId, question) => ask.mutateAsync({ dimensionId, question })} />
             <button onClick={() => generate.mutate()} disabled={missing.length > 0 || running || generate.isPending}
               className="w-fit bg-white px-3 py-1 text-black disabled:opacity-40">
               {running ? 'Generating' : project.runs.length ? 'Generate again' : 'Generate'}
