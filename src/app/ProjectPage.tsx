@@ -37,11 +37,10 @@ export function ProjectPage({ id }: { id: string }) {
           {project.photos.map((p, i) => <img key={p} src={api.fileUrl(id, 'photos', p)} onClick={() => setActive(project.plan?.dimensions.find(d => d.photo === i)?.id ?? null)}
             className={`h-16 cursor-pointer ${i === photoIndex ? 'opacity-100' : 'opacity-50'}`} alt="" />)}
         </div>
-        {!project.plan && (
-          <button onClick={() => plan.mutate()} disabled={plan.isPending} className="w-fit bg-white px-3 py-1 text-black disabled:opacity-40">
-            {plan.isPending ? 'Looking at the photos' : 'Identify part and measurements'}
-          </button>
-        )}
+        <button onClick={() => plan.mutate()} disabled={plan.isPending || running}
+          className={`w-fit px-3 py-1 disabled:opacity-40 ${project.plan ? 'text-neutral-400 hover:text-white' : 'bg-white text-black'}`}>
+          {plan.isPending ? 'Looking at the photos' : project.plan ? 'Identify again (redoes the measurement list)' : 'Identify part and measurements'}
+        </button>
         {plan.error && <p className="text-red-400">{plan.error.message}</p>}
         {project.plan?.question && <p className="text-yellow-300">{project.plan.question}</p>}
       </div>

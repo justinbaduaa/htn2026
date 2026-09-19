@@ -19,7 +19,7 @@ export const planSchema = z.strictObject({
   title: z.string().max(100),
   summary: z.string().max(800),
   parts: z.array(z.strictObject({ name: z.string().max(60), printed: z.boolean(), purpose: z.string().max(200) })).max(8),
-  dimensions: z.array(requestedDimensionSchema).max(12),
+  dimensions: z.array(requestedDimensionSchema).max(20),
   question: z.string().max(400),   // non-empty only when photos are unusable
 });
 export type Plan = z.infer<typeof planSchema>;

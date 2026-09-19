@@ -1,12 +1,14 @@
 import { api } from '../shared/api';
 import type { Project, Run } from '../shared/types';
 import { Viewer } from './Viewer';
+import { useElapsed } from './useElapsed';
 
 export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; run: Run; onAcceptNeeds: () => void }) {
   const url = (f: string) => api.fileUrl(project.id, 'runs', String(run.n), f);
+  const elapsed = useElapsed(run.status === 'running', run.started);
   return (
     <section className="flex flex-col gap-3 border-t border-neutral-800 pt-3">
-      <div className="flex items-baseline gap-3"><span>Run {run.n + 1}</span><span className="text-neutral-400">{run.status}</span></div>
+      <div className="flex items-baseline gap-3"><span>Run {run.n + 1}</span><span className="text-neutral-400">{run.status === 'running' ? `running, ${elapsed} s. Usually 30 to 90 s, up to 8 min.` : run.status}</span></div>
       {run.status === 'needs_dimensions' && run.needs && (
         <div>
           <p>The model needs {run.needs.length} more measurement{run.needs.length > 1 ? 's' : ''}:</p>
