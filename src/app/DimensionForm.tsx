@@ -5,6 +5,7 @@ type Props = {
   project: Project;
   active: string | null;
   onFocus: (id: string) => void;
+  onHover: (id: string | null) => void;
   onChange: (patch: Pick<Project, 'values' | 'extra' | 'notes'>) => void;
   onAsk: (dimensionId: string, question: string) => Promise<unknown>;
   onSkip: (dimensionId: string) => void;
@@ -18,7 +19,7 @@ export function missingCritical(project: Project): RequestedDimension[] {
  * Inputs are drafts in local state and save on blur or Enter. Saving on every keystroke
  * let the server refetch overwrite the field mid-typing and drop digits.
  */
-export function DimensionForm({ project, active, onFocus, onChange, onAsk, onSkip }: Props) {
+export function DimensionForm({ project, active, onFocus, onHover, onChange, onAsk, onSkip }: Props) {
   const plan = project.plan!;
   const fromProject = () => Object.fromEntries(plan.dimensions.map(d => [d.id, project.values[d.id]?.toString() ?? d.default_mm?.toString() ?? '']));
   const [draft, setDraft] = useState<Record<string, string>>(fromProject);
@@ -38,7 +39,7 @@ export function DimensionForm({ project, active, onFocus, onChange, onAsk, onSki
   return (
     <div className="flex flex-col gap-2">
       {plan.dimensions.map(d => (
-        <div key={d.id} className={`px-1 ${active === d.id ? 'bg-neutral-900' : ''}`}>
+        <div key={d.id} className={`px-1 ${active === d.id ? 'bg-neutral-900' : ''}`} onMouseEnter={() => onHover(d.id)} onMouseLeave={() => onHover(null)}>
           <label className="grid grid-cols-[1fr_6rem] items-center gap-2">
             <span>
               {d.name}{d.critical && <span className="ml-1 text-neutral-400">required</span>}

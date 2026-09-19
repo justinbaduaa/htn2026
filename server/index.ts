@@ -17,6 +17,8 @@ export const app = new Hono();
 app.get('/api/health', c => c.json({ ok: true, busy: generate.isBusy() }));
 app.get('/api/projects', async c => c.json(await store.list()));
 app.get('/api/projects/:id', async c => c.json(await store.load(c.req.param('id'))));
+app.delete('/api/projects/:id', async c => { await store.remove(c.req.param('id')); return c.json({ ok: true }); });
+app.delete('/api/projects', async c => { if (generate.isBusy()) return c.json({ error: 'A generation is running.' }, 409); await store.removeAll(); return c.json({ ok: true }); });
 
 app.post('/api/projects', async c => {
   const form = await c.req.formData();

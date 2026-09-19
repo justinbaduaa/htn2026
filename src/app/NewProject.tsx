@@ -21,7 +21,7 @@ export function NewProject() {
   return (
     <form onSubmit={e => { e.preventDefault(); start.mutate(); }} className="mx-auto flex max-w-xl flex-col gap-5">
       <label className="flex flex-col gap-2">
-        <span>Photos of the object. One to four, the first one straight on.</span>
+        <span>Photos of the object, one to four. First one straight on from the top. Add a side view for heights and the back if it matters. Callouts land on whichever photo shows the feature.</span>
         <input type="file" accept="image/*" multiple onChange={e => setFiles([...(e.target.files ?? [])].slice(0, 4))} />
         {files.length > 0 && (
           <div className="flex gap-2">{files.map(f => <img key={f.name} src={URL.createObjectURL(f)} className="h-20" alt="" />)}</div>

@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { projectSchema, type Project } from '../src/shared/types';
 
@@ -20,6 +20,15 @@ export async function load(id: string): Promise<Project> {
 export async function save(project: Project) {
   await mkdir(dir(project.id), { recursive: true });
   await writeFile(join(dir(project.id), 'project.json'), JSON.stringify(project, null, 2));
+}
+
+export async function remove(id: string) {
+  await rm(dir(id), { recursive: true, force: true });
+}
+
+export async function removeAll() {
+  await rm(ROOT, { recursive: true, force: true });
+  await mkdir(ROOT, { recursive: true });
 }
 
 export async function create(photos: { data: Uint8Array }[], description: string): Promise<Project> {
