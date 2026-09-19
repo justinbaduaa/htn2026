@@ -30,6 +30,8 @@ app.post('/api/projects/:id/plan', async c => {
   const paths = project.photos.map(p => join(store.dir(project.id), 'photos', p));
   try {
     const plan = await model.plan(paths, planPrompt);
+    // Models sometimes number photos from 1. Keep every callout on a photo that exists.
+    plan.dimensions = plan.dimensions.map(d => ({ ...d, photo: Math.min(Math.max(d.photo, 0), project.photos.length - 1) }));
     project.plan = plan; project.title = plan.title;
     await store.save(project);
     return c.json(project);

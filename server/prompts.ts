@@ -11,7 +11,7 @@ Return JSON matching the schema. Rules:
 - List the dimensions the user must measure with calipers. Mark critical=true for anything that affects fit: outline extents, hole centers, hole diameters, tallest component height, mating surfaces, port positions. Mark critical=false for cosmetic dimensions and give a default_mm.
 - Coordinate frame: the object's bottom-left corner in the first photo is X=0,Y=0; X to the right, Y up. Hole positions are measured from that corner to the hole center. Give hole_x, hole_y, hole_diameter as three dimensions sharing the same hole id (h1, h2, ...).
 - kinds: extent_x, extent_y, extent_z (tallest point above the object's flat face), hole_x, hole_y, hole_diameter, other.
-- For every dimension give the photo index and a normalized box (0..1, origin top-left) around where the calipers go. Boxes are hints; the name and why must stand on their own.
+- For every dimension give the photo index (0-based: the first attached photo is 0) and a normalized box (0..1, origin top-left) around where the calipers go. Boxes are hints; the name and why must stand on their own.
 - At most 12 dimensions. Prefer fewer. Do not ask for anything you can default safely.
 - If the photos are unusable, set question to what you need and leave dimensions empty. Otherwise question is "".`;
 
