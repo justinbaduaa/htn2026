@@ -12,7 +12,7 @@ copyFileSync('cad/check.py', join(dir, 'check.py'));
 console.log('run folder:', dir);
 const dims = JSON.parse(readFileSync(join(dir, 'dims.json'), 'utf8'));
 const started = Date.now();
-await codex.generate(dir, generatePrompt(dims, null), new AbortController().signal);
+await codex.generate(dir, generatePrompt(dims, null), new AbortController().signal, [join(process.cwd(), 'mock', 'photo.png')]);
 console.log(`codex finished in ${Math.round((Date.now() - started) / 1000)}s`);
 console.log('files:', readdirSync(dir).join(', '));
 if (existsSync(join(dir, 'check.json'))) console.log(readFileSync(join(dir, 'check.json'), 'utf8'));
