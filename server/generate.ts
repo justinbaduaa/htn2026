@@ -41,35 +41,54 @@ export async function start(id: string): Promise<Run> {
 }
 
 async function execute(id: string, n: number, dirPath: string, dims: DimsFile, previous: string | null) {
-  const update = async (patch: Partial<Run>) => {
-    const project = await store.load(id);
-    project.runs[n] = { ...project.runs[n]!, ...patch };
-    await store.save(project);
-  };
   try {
     await model.generate(dirPath, generatePrompt(dims, previous), new AbortController().signal);
-    const files = await readdir(dirPath);
-    if (files.includes('needs.json')) {
-      const parsed = needsFileSchema.safeParse(JSON.parse(await readFile(join(dirPath, 'needs.json'), 'utf8')));
-      if (!parsed.success) {
-        const first = parsed.error.issues[0];
-        await update({ status: 'failed', error: `The model asked for more measurements but wrote them in a shape the app could not read (${first?.path.join('.')}: ${first?.message}). Generate again.` });
-        return;
-      }
-      await update({ status: 'needs_dimensions', needs: parsed.data.dimensions });
+    await finalize(id, n, dirPath, 'The model finished without running the checker.');
+  } catch (error) {
+    await patch(id, n, { status: 'failed', error: error instanceof Error ? error.message : String(error) });
+  }
+}
+
+async function patch(id: string, n: number, changes: Partial<Run>) {
+  const project = await store.load(id);
+  project.runs[n] = { ...project.runs[n]!, ...changes };
+  await store.save(project);
+}
+
+/** Reads what the model left in the run folder and sets the run's final status. */
+async function finalize(id: string, n: number, dirPath: string, missingError: string) {
+  const files = await readdir(dirPath);
+  if (files.includes('needs.json')) {
+    const parsed = needsFileSchema.safeParse(JSON.parse(await readFile(join(dirPath, 'needs.json'), 'utf8')));
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      await patch(id, n, { status: 'failed', error: `The model asked for more measurements but wrote them in a shape the app could not read (${first?.path.join('.')}: ${first?.message}). Generate again.` });
       return;
     }
-    if (!files.includes('check.json')) { await update({ status: 'failed', error: 'The model finished without running the checker.' }); return; }
-    const check = checkResultSchema.parse(JSON.parse(await readFile(join(dirPath, 'check.json'), 'utf8')));
-    if (!check.ok) { await update({ status: 'failed', check, error: check.error ?? 'Checker rejected the part.' }); return; }
-    const outputs: Run['files'] = [];
-    for (const part of check.parts) {
-      const stl = join(dirPath, `${part.name}.stl`);
-      const sliced = await slice(stl);
-      outputs.push({ part: part.name, step: `${part.name}.step`, stl: basename(stl), gcode: sliced ? basename(sliced.gcode) : null, minutes: sliced?.minutes ?? null });
+    await patch(id, n, { status: 'needs_dimensions', needs: parsed.data.dimensions });
+    return;
+  }
+  if (!files.includes('check.json')) { await patch(id, n, { status: 'failed', error: missingError }); return; }
+  const check = checkResultSchema.parse(JSON.parse(await readFile(join(dirPath, 'check.json'), 'utf8')));
+  if (!check.ok) { await patch(id, n, { status: 'failed', check, error: check.error ?? 'Checker rejected the part.' }); return; }
+  const outputs: Run['files'] = [];
+  for (const part of check.parts) {
+    const stl = join(dirPath, `${part.name}.stl`);
+    const sliced = await slice(stl);
+    outputs.push({ part: part.name, step: `${part.name}.step`, stl: basename(stl), gcode: sliced ? basename(sliced.gcode) : null, minutes: sliced?.minutes ?? null });
+  }
+  await patch(id, n, { status: 'done', check, files: outputs });
+}
+
+/** Called once at server start. A restart mid-run leaves runs marked running with nobody watching them. */
+export async function recoverOrphans() {
+  for (const project of await store.list()) {
+    for (const run of project.runs) {
+      if (run.status !== 'running') continue;
+      console.log(`recovering run ${run.n} of ${project.id}`);
+      await finalize(project.id, run.n, store.runDir(project.id, run.n), 'The server restarted during this run. Generate again.').catch(async error => {
+        await patch(project.id, run.n, { status: 'failed', error: `Server restarted during this run (${error instanceof Error ? error.message : String(error)}). Generate again.` });
+      });
     }
-    await update({ status: 'done', check, files: outputs });
-  } catch (error) {
-    await update({ status: 'failed', error: error instanceof Error ? error.message : String(error) });
   }
 }

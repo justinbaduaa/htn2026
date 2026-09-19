@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 
 mkdirSync(store.ROOT, { recursive: true });
+void generate.recoverOrphans();
 
 export const app = new Hono();
 app.get('/api/health', c => c.json({ ok: true, busy: generate.isBusy() }));
