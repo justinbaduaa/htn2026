@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.context/
+.venv/
+projects/
+.env*
+!.env.example
