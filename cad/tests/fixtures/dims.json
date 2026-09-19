@@ -1,0 +1,13 @@
+{
+  "title": "Test plate",
+  "plan": { "title": "Test plate", "summary": "", "parts": [{ "name": "plate", "printed": true, "purpose": "" }], "dimensions": [], "question": "" },
+  "dimensions": [
+    { "id": "w", "name": "board width", "kind": "extent_x", "hole": null, "value_mm": 60 },
+    { "id": "h", "name": "board height", "kind": "extent_y", "hole": null, "value_mm": 40 },
+    { "id": "h1x", "name": "hole 1 x", "kind": "hole_x", "hole": "h1", "value_mm": 5 },
+    { "id": "h1y", "name": "hole 1 y", "kind": "hole_y", "hole": "h1", "value_mm": 5 },
+    { "id": "h1d", "name": "hole 1 diameter", "kind": "hole_diameter", "hole": "h1", "value_mm": 4 }
+  ],
+  "constants": { "fit_clearance_mm": 0.3, "hole_compensation_mm": 0.2, "wall_mm": 2.4 },
+  "notes": ""
+}
