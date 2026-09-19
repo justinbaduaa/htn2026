@@ -50,8 +50,13 @@ async function execute(id: string, n: number, dirPath: string, dims: DimsFile, p
     await model.generate(dirPath, generatePrompt(dims, previous), new AbortController().signal);
     const files = await readdir(dirPath);
     if (files.includes('needs.json')) {
-      const needs = needsFileSchema.parse(JSON.parse(await readFile(join(dirPath, 'needs.json'), 'utf8')));
-      await update({ status: 'needs_dimensions', needs: needs.dimensions });
+      const parsed = needsFileSchema.safeParse(JSON.parse(await readFile(join(dirPath, 'needs.json'), 'utf8')));
+      if (!parsed.success) {
+        const first = parsed.error.issues[0];
+        await update({ status: 'failed', error: `The model asked for more measurements but wrote them in a shape the app could not read (${first?.path.join('.')}: ${first?.message}). Generate again.` });
+        return;
+      }
+      await update({ status: 'needs_dimensions', needs: parsed.data.dimensions });
       return;
     }
     if (!files.includes('check.json')) { await update({ status: 'failed', error: 'The model finished without running the checker.' }); return; }

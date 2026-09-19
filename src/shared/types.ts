@@ -5,8 +5,8 @@ export const dimensionKind = z.enum(['extent_x', 'extent_y', 'extent_z', 'hole_d
 
 export const requestedDimensionSchema = z.strictObject({
   id: z.string().min(1).max(40),
-  name: z.string().max(80),
-  why: z.string().max(200),
+  name: z.string().max(160),
+  why: z.string().max(400),
   critical: z.boolean(),
   kind: dimensionKind,
   hole: z.string().max(20).nullable(),   // groups hole_x, hole_y, hole_diameter for one hole
@@ -52,7 +52,7 @@ export const checkResultSchema = z.strictObject({
 export type CheckResult = z.infer<typeof checkResultSchema>;
 
 // Written by the model when it needs a measurement it does not have.
-export const needsFileSchema = z.strictObject({ dimensions: z.array(requestedDimensionSchema).min(1).max(6) });
+export const needsFileSchema = z.strictObject({ dimensions: z.array(requestedDimensionSchema).min(1).max(20) });
 
 export const runSchema = z.strictObject({
   n: z.number().int(),
