@@ -30,13 +30,30 @@ function runCodex(args: string[], opts: { cwd: string; eventsPath: string; timeo
     const child = spawn('codex', args, { cwd: opts.cwd, stdio: ['ignore', 'pipe', 'pipe'], env: opts.env ?? process.env, signal: opts.signal });
     const events = createWriteStream(opts.eventsPath);
     child.stdout.pipe(events);
+    // Codex reports API failures (usage limits, auth, bad images) as JSON events on stdout, not on stderr.
+    let modelError = '';
+    let buffer = '';
+    child.stdout.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString();
+      const lines = buffer.split('\n'); buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        try {
+          const e = JSON.parse(line);
+          const message: unknown = e?.type === 'turn.failed' ? e.error?.message : e?.type === 'error' ? e.message : undefined;
+          if (typeof message === 'string' && !message.startsWith('Skill descriptions')) modelError = message;
+        } catch { /* not JSON */ }
+      }
+    });
     let stderr = '';
     child.stderr.on('data', d => { stderr += d; });
     const timer = setTimeout(() => { child.kill('SIGTERM'); reject(new Error(`codex timed out after ${opts.timeoutMs / 1000}s`)); }, opts.timeoutMs);
     child.on('error', error => { clearTimeout(timer); reject(error); });
     child.on('close', code => {
       clearTimeout(timer);
-      if (code === 0) resolve(); else reject(new Error(`codex exited ${code}: ${stderr.trim().split('\n').slice(-3).join(' | ')}`));
+      if (code === 0) { resolve(); return; }
+      // Drop the benign stdin notice so the real reason is what the user sees.
+      const lines = stderr.trim().split('\n').filter(l => l.trim() && !l.includes('Reading additional input from stdin'));
+      reject(new Error(modelError || `codex exited ${code}: ${lines.slice(-6).join(' | ').slice(0, 800) || '(no stderr)'}`));
     });
   });
 }

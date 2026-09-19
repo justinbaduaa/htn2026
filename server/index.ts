@@ -41,7 +41,7 @@ app.post('/api/projects/:id/plan', async c => {
     return c.json(project);
   } catch (error) {
     console.error('plan failed', error);
-    return c.json({ error: 'The model could not read the photos. Check codex login and try again.' }, 502);
+    return c.json({ error: `The model call failed. ${error instanceof Error ? error.message : String(error)}` }, 502);
   }
 });
 
