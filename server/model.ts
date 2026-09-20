@@ -1,12 +1,14 @@
+import OpenAI from 'openai';
+import { zodTextFormat } from 'openai/helpers/zod';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { z } from 'zod';
+import type { ZodType } from 'zod';
 import { askResponseSchema, planSchema, type AskResponse, type Plan } from '../src/shared/types';
 
-const MODEL = process.env.CODEX_MODEL ?? 'gpt-6-astra';
+const CODEX_MODEL = process.env.CODEX_MODEL ?? 'gpt-6-astra';
+const OPENAI_MODEL = process.env.OPENAI_MODEL ?? CODEX_MODEL;
 const VENV_BIN = join(process.cwd(), '.venv', 'bin');
 
 export interface ModelAdapter {
@@ -19,7 +21,7 @@ export interface ModelAdapter {
 }
 
 const baseFlags = ['--ask-for-approval', 'never', 'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
-  '--disable', 'multi_agent', '--disable', 'skill_search', '-c', 'web_search="disabled"', '-c', 'project_doc_max_bytes=0', '--model', MODEL, '--json'];
+  '--disable', 'multi_agent', '--disable', 'skill_search', '-c', 'web_search="disabled"', '-c', 'project_doc_max_bytes=0', '--model', CODEX_MODEL, '--json'];
 
 /**
  * Runs codex exec with stdin closed. Codex reads extra prompt text from stdin when it is not a TTY,
@@ -57,26 +59,57 @@ function runCodex(args: string[], opts: { cwd: string; eventsPath: string; signa
   });
 }
 
-/** One read-only structured call with photos attached. No shell, no files. */
-async function structured<T>(photoPaths: string[], prompt: string, schema: z.ZodType<T>, effort: 'medium' | 'high'): Promise<T> {
-  const dir = await mkdtemp(join(tmpdir(), 'ask-'));
-  try {
-    const { $schema, ...json } = z.toJSONSchema(schema);
-    const schemaPath = join(dir, 'schema.json'), out = join(dir, 'out.json');
-    await writeFile(schemaPath, JSON.stringify(json));
-    const images = photoPaths.flatMap(p => ['--image', p]);
-    await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', `model_reasoning_effort="${effort}"`,
-      '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
-      // A full functional decomposition (every button, LED, port, switch as its own reading) ran
-      // ~5 min at medium reasoning; plan runs at high now, ask stays at medium so questions answer fast.
-      { cwd: dir, eventsPath: join(dir, 'events.jsonl') });
-    return schema.parse(JSON.parse(await readFile(out, 'utf8')));
-  } finally { await rm(dir, { recursive: true, force: true }); }
+type ResponsesRequest = Parameters<OpenAI['responses']['parse']>[0];
+type ResponsesClient = {
+  responses: {
+    parse(request: ResponsesRequest): Promise<{ output_parsed: unknown; output_text?: string }>;
+  };
+};
+
+let openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set. Add it to .env before analyzing photos.');
+  return openai ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 420_000 });
 }
 
-export const codex: ModelAdapter = {
-  plan: (photoPaths, prompt) => structured(photoPaths, prompt, planSchema, 'high'),
-  ask: (photoPaths, prompt) => structured(photoPaths, prompt, askResponseSchema, 'medium'),
+function imageMime(data: Buffer): string {
+  if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'image/jpeg';
+  if (data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (data.subarray(0, 6).toString('ascii') === 'GIF87a' || data.subarray(0, 6).toString('ascii') === 'GIF89a') return 'image/gif';
+  if (data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  throw new Error('Unsupported photo format. Use JPEG, PNG, GIF, or WebP.');
+}
+
+export async function imageDataUrl(path: string): Promise<string> {
+  const data = await readFile(path);
+  return `data:${imageMime(data)};base64,${data.toString('base64')}`;
+}
+
+/** A bounded vision request: photos in, schema-validated JSON out. No local tools or file writes. */
+export async function responsesStructured<T>(photoPaths: string[], prompt: string, schema: ZodType<T>, schemaName: string,
+  client: ResponsesClient = getOpenAI(), effort: 'medium' | 'high' = 'medium'): Promise<T> {
+  const images = await Promise.all(photoPaths.map(async path => ({
+    type: 'input_image' as const,
+    image_url: await imageDataUrl(path),
+    detail: 'high' as const,
+  })));
+  const response = await client.responses.parse({
+    model: OPENAI_MODEL,
+    reasoning: { effort },
+    store: false,
+    input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images] }],
+    text: { format: zodTextFormat(schema, schemaName) },
+  });
+  if (response.output_parsed == null) throw new Error(`The Responses API returned no structured output. ${response.output_text ?? ''}`.trim());
+  return schema.parse(response.output_parsed);
+}
+
+export const responses: Pick<ModelAdapter, 'plan' | 'ask'> = {
+  plan: (photoPaths, prompt) => responsesStructured(photoPaths, prompt, planSchema, 'cad_measurement_plan', getOpenAI(), 'high'),
+  ask: (photoPaths, prompt) => responsesStructured(photoPaths, prompt, askResponseSchema, 'measurement_clarification'),
+};
+
+export const codex: Pick<ModelAdapter, 'generate'> = {
   async generate(runDir, prompt, signal, photoPaths) {
     const images = photoPaths.flatMap(p => ['--image', p]);
     await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="xhigh"', '--cd', runDir,
@@ -85,4 +118,4 @@ export const codex: ModelAdapter = {
   },
 };
 
-export const model: ModelAdapter = codex;
+export const model: ModelAdapter = { ...responses, ...codex };

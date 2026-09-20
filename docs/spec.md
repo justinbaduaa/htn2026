@@ -17,9 +17,9 @@ Not in this build: scanning, marker-mat photo, illustrated assembly, version tre
 
 ## Stack
 
-Vite, React, TypeScript, Tailwind for the app. A Hono server on Node for the API and for running Codex. Python 3.12 venv with CadQuery 2.8.0 for generation and checking. Codex CLI with the user's existing auth for both model calls. PrusaSlicer 2.9.6 CLI for G-code. Three.js for the viewer. No database.
+Vite, React, TypeScript, Tailwind for the app. A Hono server on Node for the API and model orchestration. Python 3.12 venv with CadQuery 2.8.0 for generation and checking. The OpenAI Responses API handles photo analysis and structured measurement guidance; Codex CLI handles iterative CAD generation in a local sandbox. PrusaSlicer 2.9.6 CLI produces G-code. Three.js powers the viewer. No database.
 
-Both model calls go through one adapter with two methods, `plan(photos, prompt)` and `generate(runDir, prompt)`. The Codex CLI implementation ships now. The hackathon requires calling the OpenAI API directly, so a Responses API implementation (with a local Python tool for generate) replaces it after the demo path works. Nothing outside the adapter knows which one is in use.
+All model calls go through one adapter. `plan(photos, prompt)` and measurement clarifications use the Responses API with schema-validated output. `generate(runDir, prompt)` uses Codex CLI because it needs a filesystem, Python execution, and an iterative check-and-repair loop. Nothing outside the adapter needs to know which transport powers each stage.
 
 Shared types (plan, dimension, run, check result) and the API client live in `src/shared/` with no browser or Node imports, so a React Native capture app can reuse them later.
 
@@ -45,7 +45,7 @@ Upload two to four photos. Server resizes to 1600 px max side, stores them, crea
 
 ### 2. Plan and dimension request
 
-One `codex exec` call with the photos attached and an output schema. The prompt says: identify the object, propose the part or parts to print, list the dimensions needed for fit, mark each as critical or cosmetic, and for each give a callout box on one photo showing where to put the calipers. Cap of 12 dimensions. Critical means it affects whether the part fits: outline, hole centers, hole diameters, tallest component, mating surfaces. Everything else is cosmetic with a default in millimeters.
+One Responses API call with the photos attached and a Zod-backed structured output schema. The prompt says: identify the object, propose the part or parts to print, list the dimensions needed for fit, mark each as critical or cosmetic, and for each give a callout box on one photo showing where to put the calipers. Cap of 12 dimensions. Critical means it affects whether the part fits: outline, hole centers, hole diameters, tallest component, mating surfaces. Everything else is cosmetic with a default in millimeters.
 
 Schema:
 

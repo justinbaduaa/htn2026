@@ -2,6 +2,9 @@ node_modules/
 dist/
 .context/
 .venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
 projects/
 .env*
 !.env.example
