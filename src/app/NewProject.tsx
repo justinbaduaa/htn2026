@@ -4,6 +4,9 @@ import { api } from '../shared/api';
 import { useElapsed } from './useElapsed';
 import { Generating } from './Generating';
 
+/** Sizes a textarea to its content, so a long prompt is fully visible instead of scrolling inside a fixed box. */
+const grow = (el: HTMLTextAreaElement) => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; };
+
 export function NewProject() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -41,7 +44,9 @@ export function NewProject() {
         onDragOver={e => { e.preventDefault(); if (!start.isPending) setDragging(true); }} onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); if (!start.isPending) addFiles([...e.dataTransfer.files]); }}>
         <h1 className="composer-heading">New project</h1>
-        <textarea aria-label="Describe your project" disabled={start.isPending} value={description} onChange={e => { setDescription(e.target.value); created.current = null; }} placeholder="Describe what you want to print…" required />
+        <textarea aria-label="Describe your project" disabled={start.isPending} value={description} rows={4}
+          onChange={e => { setDescription(e.target.value); created.current = null; grow(e.currentTarget); }} ref={el => { if (el) grow(el); }}
+          placeholder="Describe what you want to print…" required />
         {files.length > 0 && <div className="photo-attachments">{files.map((f, i) => <div className="attachment" key={`${f.name}-${i}`}><img src={previews[i]} alt={f.name} /><span>{i === 0 ? 'Top view' : `View ${i + 1}`}</span><button type="button" aria-label={`Remove ${f.name}`} disabled={start.isPending} onClick={() => { setFiles(files.filter((_, n) => n !== i)); created.current = null; }}>×</button></div>)}</div>}
         <div className="composer-footer"><input ref={input} type="file" accept="image/*" multiple className="sr-only" aria-label="Attach object photos" disabled={start.isPending} onChange={e => { addFiles([...(e.target.files ?? [])]); e.target.value = ''; }} /><button type="button" className="attach-button" disabled={start.isPending} onClick={() => input.current?.click()}><span>＋</span> Add photos <small>{files.length}</small></button><button className="primary-button" disabled={!files.length || !description.trim() || start.isPending}>{start.isPending ? 'Analyzing…' : 'Continue'}</button></div>
         {fileError && <p className="error-message" role="alert">{fileError}</p>}

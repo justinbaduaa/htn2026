@@ -4,6 +4,7 @@ import { api } from '../shared/api';
 import type { Project, Run } from '../shared/types';
 import { Viewer } from './Viewer';
 import { DrawingViews } from './DrawingViews';
+import { AssemblyInstructions } from './AssemblyInstructions';
 import { Generating } from './Generating';
 import { useElapsed } from './useElapsed';
 
@@ -11,6 +12,7 @@ export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; ru
   const url = (f: string) => api.fileUrl(project.id, 'runs', String(run.n), f);
   const elapsed = useElapsed(run.status === 'running', run.started);
   const [views, setViews] = useState(true);
+  const [assembly, setAssembly] = useState(true);
   // Dimensions come from the exported STEP solids, never from scan inputs.
   const { data: geometry, error: geometryError } = useQuery({ queryKey: ['cad-geometry', project.id, run.n], queryFn: () => api.geometry(project.id, run.n), enabled: run.status === 'done', staleTime: Infinity });
   const parts = run.files.map(f => ({ name: f.part, url: url(f.stl) }));
@@ -56,6 +58,13 @@ export function RunPanel({ project, run, onAcceptNeeds }: { project: Project; ru
             </tbody>
           </table>
           <p className="text-neutral-400">Print order: as listed. Each part is oriented with its flat face on the bed. Copy the G-code to the SD card.</p>
+          <div className="assembly-section">
+            <div className="assembly-heading">
+              <h3>Assembly instructions</h3>
+              <button type="button" onClick={() => setAssembly(v => !v)} disabled={!geometry}>{assembly ? 'Hide' : 'Show'}</button>
+            </div>
+            {assembly && geometry && <AssemblyInstructions project={project} run={run} parts={parts} geometry={geometry} />}
+          </div>
           <button type="button" onClick={() => setViews(v => !v)} disabled={!geometry} className="w-fit px-3 py-1 text-neutral-300 hover:text-white disabled:opacity-40">
             {views ? 'Hide engineering views' : 'Engineering views: top, front, right, isometric with dimensions'}
           </button>

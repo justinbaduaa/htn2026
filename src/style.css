@@ -20,6 +20,7 @@ h1,h2,h3,p{margin:0}
 .app-shell{max-width:1600px;margin:auto;padding:0 46px 36px}
 .app-header{height:94px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8edf3;position:relative;z-index:2}
 .brand{display:flex;gap:5px;align-items:center;font-size:19px;font-weight:650;letter-spacing:-.8px}
+.brand img{display:block;height:30px;width:auto}
 .brand>span:not(.brand-mark):not(.brand-beta){color:#95a3b3;font-weight:400}
 .brand-mark{width:33px;height:37px;font-size:38px;line-height:30px;margin-right:7px;color:#50799e}
 .brand-beta{font-size:9px;color:#8a9bae;letter-spacing:1.5px;margin-left:10px}
@@ -42,7 +43,7 @@ h1,h2,h3,p{margin:0}
 .composer-heading{display:flex;align-items:center;gap:10px;font-weight:500;font-size:13px}
 .sparkle{font-size:23px;color:#7096ba}
 .small-tag{font-size:9px;letter-spacing:1.2px;color:#8a99aa;margin-left:auto}
-.composer textarea{display:block;width:100%;min-height:106px;background:transparent;border:0;box-shadow:none;padding:13px 0;font-size:15px;line-height:1.7}
+.composer textarea{display:block;width:100%;min-height:106px;max-height:60svh;overflow-y:auto;resize:none;field-sizing:content;background:transparent;border:0;box-shadow:none;padding:13px 0;font-size:15px;line-height:1.7}
 .composer-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #eef1f5;padding-top:15px}
 .attach-button{background:#f7f9fc;display:flex;align-items:center;gap:8px}
 .attach-button>span{font-size:18px}
@@ -180,6 +181,7 @@ a[download]{color:#496d91}
 @media(max-width:760px){.app-shell{padding:0 16px 25px}
 .app-header{height:76px}
 .brand{font-size:16px}
+.brand img{height:24px}
 .brand-beta{display:none}
 .app-header nav{gap:12px;font-size:11px}
 .nav-new{padding:7px}
@@ -269,3 +271,15 @@ a[download]{color:#496d91}
 .cad-feature-schedule p{color:#718094;margin:8px 0}
 .cad-feature-schedule ul{list-style:none;padding:0;max-height:320px;overflow:auto;font-family:ui-monospace,monospace}
 .cad-feature-schedule li{padding:5px 0;border-top:1px solid #edf0f4;overflow-wrap:anywhere}
+
+/* Assembly booklet */
+.assembly-section{border-top:1px solid var(--line);padding-top:16px;margin-top:6px}
+.assembly-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.assembly-heading h3{font-size:15px;font-weight:500}
+.assembly-heading button{font-size:11px;padding:5px 10px}
+.assembly-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:#5d7187;margin-bottom:12px}
+.assembly-toolbar button{font-size:11px;padding:5px 10px}
+.assembly-pages{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.assembly-page img{display:block;width:100%;height:auto;border:1px solid #d7e0e8;border-radius:8px;background:#fff}
+.assembly-page-caption{display:flex;justify-content:space-between;font-size:11px;color:#708094;padding:5px 2px}
+@media(max-width:760px){.assembly-pages{grid-template-columns:1fr}}
