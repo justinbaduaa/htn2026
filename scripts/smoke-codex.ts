@@ -17,7 +17,7 @@ function newestProjectPhoto(): string | null {
 const photo = process.argv[2] ?? newestProjectPhoto();
 if (!photo || !existsSync(photo)) { console.error('No photo. Pass a path or create a project first.'); process.exit(1); }
 const dir = mkdtempSync(join(tmpdir(), 'smoke-'));
-copyFileSync('cad/tests/fixtures/dims.json', join(dir, 'dims.json'));
+copyFileSync('src/app/fixtures/badge-dims.json', join(dir, 'dims.json'));
 copyFileSync('cad/check.py', join(dir, 'check.py'));
 console.log('run folder:', dir);
 const dims = JSON.parse(readFileSync(join(dir, 'dims.json'), 'utf8'));

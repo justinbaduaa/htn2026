@@ -25,7 +25,7 @@ const baseFlags = ['--ask-for-approval', 'never', 'exec', '--ignore-user-config'
  * Runs codex exec with stdin closed. Codex reads extra prompt text from stdin when it is not a TTY,
  * and an open pipe makes it wait forever. JSON events stream to eventsPath for debugging.
  */
-function runCodex(args: string[], opts: { cwd: string; eventsPath: string; timeoutMs: number; signal?: AbortSignal; env?: NodeJS.ProcessEnv }) {
+function runCodex(args: string[], opts: { cwd: string; eventsPath: string; signal?: AbortSignal; env?: NodeJS.ProcessEnv }) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn('codex', args, { cwd: opts.cwd, stdio: ['ignore', 'pipe', 'pipe'], env: opts.env ?? process.env, signal: opts.signal });
     const events = createWriteStream(opts.eventsPath);
@@ -46,10 +46,9 @@ function runCodex(args: string[], opts: { cwd: string; eventsPath: string; timeo
     });
     let stderr = '';
     child.stderr.on('data', d => { stderr += d; });
-    const timer = setTimeout(() => { child.kill('SIGTERM'); reject(new Error(`codex timed out after ${opts.timeoutMs / 1000}s`)); }, opts.timeoutMs);
-    child.on('error', error => { clearTimeout(timer); reject(error); });
+    // No timeout: high reasoning efforts can legitimately run a long time, so the model finishes or the caller aborts via signal.
+    child.on('error', error => { reject(error); });
     child.on('close', code => {
-      clearTimeout(timer);
       if (code === 0) { resolve(); return; }
       // Drop the benign stdin notice so the real reason is what the user sees.
       const lines = stderr.trim().split('\n').filter(l => l.trim() && !l.includes('Reading additional input from stdin'));
@@ -59,30 +58,30 @@ function runCodex(args: string[], opts: { cwd: string; eventsPath: string; timeo
 }
 
 /** One read-only structured call with photos attached. No shell, no files. */
-async function structured<T>(photoPaths: string[], prompt: string, schema: z.ZodType<T>): Promise<T> {
+async function structured<T>(photoPaths: string[], prompt: string, schema: z.ZodType<T>, effort: 'medium' | 'high'): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), 'ask-'));
   try {
     const { $schema, ...json } = z.toJSONSchema(schema);
     const schemaPath = join(dir, 'schema.json'), out = join(dir, 'out.json');
     await writeFile(schemaPath, JSON.stringify(json));
     const images = photoPaths.flatMap(p => ['--image', p]);
-    await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', 'model_reasoning_effort="medium"',
+    await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', `model_reasoning_effort="${effort}"`,
       '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
-      // A full functional decomposition (every button, LED, port, switch as its own reading) runs
-      // ~5 min at medium reasoning. ask() shares this path but finishes fast, so the wider ceiling is free.
-      { cwd: dir, eventsPath: join(dir, 'events.jsonl'), timeoutMs: 420_000 });
+      // A full functional decomposition (every button, LED, port, switch as its own reading) ran
+      // ~5 min at medium reasoning; plan runs at high now, ask stays at medium so questions answer fast.
+      { cwd: dir, eventsPath: join(dir, 'events.jsonl') });
     return schema.parse(JSON.parse(await readFile(out, 'utf8')));
   } finally { await rm(dir, { recursive: true, force: true }); }
 }
 
 export const codex: ModelAdapter = {
-  plan: (photoPaths, prompt) => structured(photoPaths, prompt, planSchema),
-  ask: (photoPaths, prompt) => structured(photoPaths, prompt, askResponseSchema),
+  plan: (photoPaths, prompt) => structured(photoPaths, prompt, planSchema, 'high'),
+  ask: (photoPaths, prompt) => structured(photoPaths, prompt, askResponseSchema, 'medium'),
   async generate(runDir, prompt, signal, photoPaths) {
     const images = photoPaths.flatMap(p => ['--image', p]);
-    await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="high"', '--cd', runDir,
+    await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="xhigh"', '--cd', runDir,
       '--output-last-message', join(runDir, 'last.md'), prompt, ...images],
-      { cwd: runDir, eventsPath: join(runDir, 'events.jsonl'), timeoutMs: 480_000, signal, env: { ...process.env, PATH: `${VENV_BIN}:${process.env.PATH}`, CHECK_PYTHON: join(VENV_BIN, 'python') } });
+      { cwd: runDir, eventsPath: join(runDir, 'events.jsonl'), signal, env: { ...process.env, PATH: `${VENV_BIN}:${process.env.PATH}`, CHECK_PYTHON: join(VENV_BIN, 'python') } });
   },
 };
 

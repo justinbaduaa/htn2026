@@ -15,7 +15,7 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <a href="#" className="brand">CADEX</a>
+        <a href="#" className="brand" aria-label="CADEX home"><img src="/cadex-logo.png" alt="CADEX" /></a>
         <nav><a href="#projects" className={hash === "#projects" ? "nav-active" : ""}>Projects</a><a href="#" className="nav-new">＋ New project</a></nav>
       </header>
       {id ? <ProjectPage key={id} id={id} /> : hash === '#projects' ? <ProjectList /> : <NewProject />}
