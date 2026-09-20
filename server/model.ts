@@ -1,10 +1,11 @@
 import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 import { askResponseSchema, planSchema, type AskResponse, type Plan } from '../src/shared/types';
 
 const CODEX_MODEL = process.env.CODEX_MODEL ?? 'gpt-6-astra';
@@ -109,7 +110,24 @@ export const responses: Pick<ModelAdapter, 'plan' | 'ask'> = {
   ask: (photoPaths, prompt) => responsesStructured(photoPaths, prompt, askResponseSchema, 'measurement_clarification'),
 };
 
-export const codex: Pick<ModelAdapter, 'generate'> = {
+/** One read-only structured call through Codex with photos attached. No shell, no files. Uses the user's ChatGPT login; no API key. */
+async function codexStructured<T>(photoPaths: string[], prompt: string, schema: ZodType<T>, effort: 'medium' | 'high'): Promise<T> {
+  const dir = await mkdtemp(join(tmpdir(), 'ask-'));
+  try {
+    const { $schema, ...json } = z.toJSONSchema(schema);
+    const schemaPath = join(dir, 'schema.json'), out = join(dir, 'out.json');
+    await writeFile(schemaPath, JSON.stringify(json));
+    const images = photoPaths.flatMap(p => ['--image', p]);
+    await runCodex([...baseFlags, '--sandbox', 'read-only', '--disable', 'shell_tool', '-c', `model_reasoning_effort="${effort}"`,
+      '--cd', dir, '--output-schema', schemaPath, '--output-last-message', out, prompt, ...images],
+      { cwd: dir, eventsPath: join(dir, 'events.jsonl') });
+    return schema.parse(JSON.parse(await readFile(out, 'utf8')));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}
+
+export const codex: ModelAdapter = {
+  plan: (photoPaths, prompt) => codexStructured(photoPaths, prompt, planSchema, 'high'),
+  ask: (photoPaths, prompt) => codexStructured(photoPaths, prompt, askResponseSchema, 'medium'),
   async generate(runDir, prompt, signal, photoPaths) {
     const images = photoPaths.flatMap(p => ['--image', p]);
     await runCodex([...baseFlags, '--sandbox', 'workspace-write', '-c', 'model_reasoning_effort="xhigh"', '--cd', runDir,
@@ -118,4 +136,6 @@ export const codex: Pick<ModelAdapter, 'generate'> = {
   },
 };
 
-export const model: ModelAdapter = { ...responses, ...codex };
+// Codex (ChatGPT login) is the default for every call. Set PLANNER=responses with an OPENAI_API_KEY to route
+// photo analysis through the Responses API instead; generation always runs through Codex for its sandbox.
+export const model: ModelAdapter = process.env.PLANNER === 'responses' ? { ...codex, ...responses } : codex;

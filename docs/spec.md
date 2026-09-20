@@ -17,9 +17,9 @@ Not in this build: scanning, marker-mat photo, illustrated assembly, version tre
 
 ## Stack
 
-Vite, React, TypeScript, Tailwind for the app. A Hono server on Node for the API and model orchestration. Python 3.12 venv with CadQuery 2.8.0 for generation and checking. The OpenAI Responses API handles photo analysis and structured measurement guidance; Codex CLI handles iterative CAD generation in a local sandbox. PrusaSlicer 2.9.6 CLI produces G-code. Three.js powers the viewer. No database.
+Vite, React, TypeScript, Tailwind for the app. A Hono server on Node for the API and model orchestration. Python 3.12 venv with CadQuery 2.8.0 for generation and checking. Codex CLI (the user's ChatGPT login, no API key) handles photo analysis, measurement guidance and iterative CAD generation in a local sandbox. Setting PLANNER=responses with an OPENAI_API_KEY routes photo analysis through the OpenAI Responses API instead. PrusaSlicer 2.9.6 CLI produces G-code. Three.js powers the viewer. No database.
 
-All model calls go through one adapter. `plan(photos, prompt)` and measurement clarifications use the Responses API with schema-validated output. `generate(runDir, prompt)` uses Codex CLI because it needs a filesystem, Python execution, and an iterative check-and-repair loop. Nothing outside the adapter needs to know which transport powers each stage.
+All model calls go through one adapter. `plan(photos, prompt)` and measurement clarifications are read-only Codex calls with schema-validated output (or Responses API calls when PLANNER=responses). `generate(runDir, prompt)` uses Codex CLI because it needs a filesystem, Python execution, and an iterative check-and-repair loop. Nothing outside the adapter needs to know which transport powers each stage.
 
 Shared types (plan, dimension, run, check result) and the API client live in `src/shared/` with no browser or Node imports, so a React Native capture app can reuse them later.
 
